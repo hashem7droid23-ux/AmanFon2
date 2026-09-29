@@ -37,6 +37,19 @@ object FirebaseAuthManager {
         }
     }
 
+    private fun getDefaultWebClientId(context: Context): String? {
+        val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+        return if (resId != 0) {
+            try {
+                context.getString(resId).ifBlank { null }
+            } catch (_: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
     fun attemptAutoSignIn(
         context: Context,
         credentialManager: CredentialManager,
@@ -48,10 +61,9 @@ object FirebaseAuthManager {
             onAuthSuccess()
             return
         }
-        val clientId = try {
-            context.getString(R.string.default_web_client_id)
-        } catch (e: Exception) {
-            Log.w(TAG, "default_web_client_id not found: ${e.message}")
+        val clientId = getDefaultWebClientId(context)
+        if (clientId == null) {
+            Log.w(TAG, "default_web_client_id not found")
             onUnauthenticated()
             return
         }
@@ -92,10 +104,9 @@ object FirebaseAuthManager {
         scope: CoroutineScope,
         onAuthCancelled: () -> Unit = {}
     ) {
-        val clientId = try {
-            context.getString(R.string.default_web_client_id)
-        } catch (e: Exception) {
-            onAuthError("Google Sign-In configuration missing: default_web_client_id not found")
+        val clientId = getDefaultWebClientId(context)
+        if (clientId == null) {
+            onAuthError("إعدادات تسجيل الدخول عبر Google غير متوفرة في بيئة البناء الحالية")
             return
         }
 

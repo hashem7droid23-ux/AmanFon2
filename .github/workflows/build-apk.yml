@@ -62,7 +62,12 @@ jobs:
                     "package_name": "com.aistudio.lostphone.ymndx"
                   }
                 },
-                "oauth_client": [],
+                "oauth_client": [
+                  {
+                    "client_id": "550389528405-cap0jq2qp73mi3u8a95h37r206o7ubtd.apps.googleusercontent.com",
+                    "client_type": 3
+                  }
+                ],
                 "api_key": [
                   {
                     "current_key": "AIzaSyC_lRrLC4BobUJLMNsOyGGXGafiipWiNJI"
