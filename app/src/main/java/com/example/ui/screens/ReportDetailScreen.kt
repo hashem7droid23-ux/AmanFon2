@@ -400,7 +400,7 @@ fun ReportDetailScreen(
 
                             Button(
                                 onClick = {
-                                    val msg = "السلام عليكم ورحمة الله، أنا أتواصل معك بخصوص بلاغ الهاتف المفقود (${item.brand} ${item.model}) عبر تطبيق مفقود اليمن..."
+                                    val msg = "السلام عليكم ورحمة الله، أنا أتواصل معك بخصوص بلاغ الهاتف المفقود (${item.brand} ${item.model}) عبر تطبيق أمان فون..."
                                     IntentHelper.openWhatsApp(context, item.whatsappNumber, msg)
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),

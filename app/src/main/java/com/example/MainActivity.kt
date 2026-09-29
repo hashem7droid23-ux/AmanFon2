@@ -252,6 +252,10 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                 label = "ScreenTransition"
             ) { screen ->
                 when (screen) {
+                    AppScreen.LOGIN -> com.example.ui.screens.LoginScreen(
+                        onLoginSuccess = { viewModel.navigateTo(AppScreen.FEED) },
+                        onSkipGuest = { viewModel.navigateTo(AppScreen.FEED) }
+                    )
                     AppScreen.FEED -> HomeScreen(
                         viewModel = viewModel
                     )

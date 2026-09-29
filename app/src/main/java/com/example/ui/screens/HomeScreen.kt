@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
@@ -132,16 +133,16 @@ fun HomeScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "مفقود اليمن",
+                                    text = "أمان فون",
                                     color = PureWhite,
-                                    fontSize = 17.sp,
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 YemenFlagPill()
                             }
                             Text(
-                                text = "المنظومة الوطنية لمكافحة سرقة الهواتف",
+                                text = "المنظومة الوطنية لحماية وتتبع الهواتف",
                                 color = PureWhite.copy(alpha = 0.8f),
                                 fontSize = 10.sp
                             )
@@ -149,6 +150,17 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    // Profile / Login shortcut
+                    IconButton(
+                        onClick = { viewModel.navigateTo(AppScreen.LOGIN) },
+                        modifier = Modifier.testTag("account_login_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "تسجيل الدخول وحقوق المطور",
+                            tint = PureWhite
+                        )
+                    }
                     // Guide for shops & users
                     IconButton(
                         onClick = { viewModel.navigateTo(AppScreen.SHOPS_GUIDE) },
@@ -514,7 +526,7 @@ fun HomeScreen(
                         onClick = { viewModel.openReportDetails(report.id) },
                         onCallClick = { IntentHelper.makeCall(context, report.primaryPhone) },
                         onWhatsAppClick = {
-                            val msg = "السلام عليكم، بخصوص بلاغ الهاتف ${report.brand} ${report.model} في تطبيق مفقود اليمن..."
+                            val msg = "السلام عليكم، بخصوص بلاغ الهاتف ${report.brand} ${report.model} في تطبيق أمان فون..."
                             IntentHelper.openWhatsApp(context, report.whatsappNumber, msg)
                         },
                         onShareClick = { IntentHelper.shareReport(context, report) }

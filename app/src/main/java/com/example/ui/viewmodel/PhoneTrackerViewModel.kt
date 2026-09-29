@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class AppScreen {
+    LOGIN,
     FEED,
     CHECK_IMEI,
     NEW_REPORT,
@@ -53,7 +54,7 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
     }
 
     // Navigation State
-    private val _currentScreen = MutableStateFlow(AppScreen.FEED)
+    private val _currentScreen = MutableStateFlow(AppScreen.LOGIN)
     val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
 
     private val _screenHistory = mutableListOf<AppScreen>()

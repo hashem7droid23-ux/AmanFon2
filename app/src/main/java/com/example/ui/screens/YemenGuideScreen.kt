@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -64,6 +67,7 @@ fun YemenGuideScreen(
     modifier: Modifier = Modifier
 ) {
     BackHandler { onBack() }
+    val context = LocalContext.current
 
     Scaffold(
         modifier = modifier,
@@ -124,7 +128,7 @@ fun YemenGuideScreen(
                         )
                     }
                     Text(
-                        text = "يهدف تطبيق مفقود اليمن لقطع الطريق على عصابات سرقة الهواتف من خلال ربط محلات الصيانة والبيع بنظام تنبيهات فوري موحد وقاعدة بيانات وطنية لـ IMEI.",
+                        text = "يهدف تطبيق أمان فون لقطع الطريق على عصابات سرقة الهواتف من خلال ربط محلات الصيانة والبيع بنظام تنبيهات فوري موحد وقاعدة بيانات وطنية لـ IMEI.",
                         color = PureWhite.copy(alpha = 0.9f),
                         fontSize = 12.sp,
                         lineHeight = 18.sp
@@ -187,7 +191,7 @@ fun YemenGuideScreen(
                 icon = Icons.Default.Warning,
                 iconTint = AlertRed,
                 title = "3. عند السرقة: سارع بتقديم البلاغ في التطبيق والشرطة",
-                desc = "انشر البلاغ فوراً في تطبيق مفقود اليمن ليصل إشعار عاجل لجميع المحلات في محافظتك وبقية المحافظات في غضون ثوانٍ."
+                desc = "انشر البلاغ فوراً في تطبيق أمان فون ليصل إشعار عاجل لجميع المحلات في محافظتك وبقية المحافظات في غضون ثوانٍ."
             )
 
             // 4. Emergency Numbers in Yemen
@@ -217,6 +221,68 @@ fun YemenGuideScreen(
                     EmergencyRow(title = "إيقاف الشريحة (يمن موبايل):", number = "188 أو 777777777")
                     EmergencyRow(title = "إيقاف الشريحة (يو YOU):", number = "111")
                     EmergencyRow(title = "إيقاف الشريحة (سبأفون):", number = "211")
+                }
+            }
+
+            // 5. Developer & Designer Rights Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Navy800),
+                border = androidx.compose.foundation.BorderStroke(1.2.dp, WarningAmber)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "حقوق البرمجة والتصميم",
+                        color = WarningAmber,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = "المهندس: هاشم القديمي",
+                        color = PureWhite,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = "مطور ومصمم تطبيق أمان فون • الجمهورية اليمنية",
+                        color = PureWhite.copy(alpha = 0.8f),
+                        fontSize = 11.sp
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { com.example.util.IntentHelper.openFacebookProfile(context, "HashemAlQodimy") },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("فيسبوك", fontSize = 11.sp, color = PureWhite)
+                        }
+                        Button(
+                            onClick = { com.example.util.IntentHelper.contactDeveloperWhatsApp(context, "777450123") },
+                            colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("واتساب", fontSize = 11.sp, color = PureWhite)
+                        }
+                        Button(
+                            onClick = { com.example.util.IntentHelper.makeCall(context, "777450123") },
+                            colors = ButtonDefaults.buttonColors(containerColor = Navy700),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("اتصال", fontSize = 11.sp, color = PureWhite)
+                        }
+                    }
                 }
             }
 

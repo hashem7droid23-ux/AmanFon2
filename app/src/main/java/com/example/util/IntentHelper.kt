@@ -47,6 +47,29 @@ object IntentHelper {
         }
     }
 
+    fun openFacebookProfile(context: Context, username: String = "HashemAlQodimy") {
+        try {
+            val facebookAppIntent = Intent(Intent.ACTION_VIEW, Uri.parse("fb://facewebmodal/f?href=https://www.facebook.com/$username")).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(facebookAppIntent)
+        } catch (_: Exception) {
+            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.facebook.com/$username")).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            try {
+                context.startActivity(browserIntent)
+            } catch (_: Exception) {
+                Toast.makeText(context, "تعذر فتح المتصفح أو تطبيق فيسبوك", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun contactDeveloperWhatsApp(context: Context, phone: String = "777450123") {
+        val msg = "السلام عليكم ورحمة الله، المهندس هاشم القديمي. أتواصل معك بخصوص تطبيق أمان فون..."
+        openWhatsApp(context, phone, msg)
+    }
+
     fun shareReport(context: Context, report: ReportEntity) {
         val statusText = when (report.reportType) {
             "STOLEN" -> "🚨 بلاغ عن هاتف مسروق"
@@ -75,7 +98,7 @@ object IntentHelper {
             📝 تفاصيل وعلامات: ${report.distinctiveMarks.ifBlank { "لا توجد علامات إضافية" }}
             
             ⚠️ تنبيه لجميع محلات الهواتف ومهندسي الصيانة في اليمن: يرجى فحص رقم IMEI والتأكد قبل الشراء أو الفرمتة.
-            تم النشر عبر تطبيق: مفقود اليمن (المنظومة الوطنية لمكافحة سرقة الهواتف)
+            تم النشر عبر تطبيق: أمان فون (المنظومة الوطنية لمكافحة سرقة الهواتف)
         """.trimIndent()
 
         val sendIntent = Intent().apply {
