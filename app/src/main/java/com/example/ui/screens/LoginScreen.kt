@@ -39,17 +39,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.ThumbUp
+import androidx.compose.ui.res.painterResource
+import com.example.R
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -299,7 +306,7 @@ fun LoginScreen(
                         color = PureWhite
                     )
 
-                    // Navigation Tabs: Google / Email / Phone
+                    // Navigation Tabs with Icons: Google / Email / Phone
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -307,7 +314,14 @@ fun LoginScreen(
                         FilterChip(
                             selected = selectedTab == AuthTab.GOOGLE,
                             onClick = { selectedTab = AuthTab.GOOGLE },
-                            label = { Text("حساب Google", fontSize = 11.sp) },
+                            leadingIcon = {
+                                androidx.compose.foundation.Image(
+                                    painter = painterResource(id = R.drawable.ic_google_logo),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            },
+                            label = { Text("Google", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = WarningAmber,
                                 selectedLabelColor = Navy900,
@@ -319,19 +333,35 @@ fun LoginScreen(
                         FilterChip(
                             selected = selectedTab == AuthTab.EMAIL,
                             onClick = { selectedTab = AuthTab.EMAIL },
-                            label = { Text("البريد الإلكتروني", fontSize = 11.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Email,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = if (selectedTab == AuthTab.EMAIL) Navy900 else WarningAmber
+                                )
+                            },
+                            label = { Text("البريد", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = WarningAmber,
                                 selectedLabelColor = Navy900,
                                 containerColor = Navy700.copy(alpha = 0.6f),
                                 labelColor = PureWhite
                             ),
-                            modifier = Modifier.weight(1.2f).testTag("tab_auth_email")
+                            modifier = Modifier.weight(1f).testTag("tab_auth_email")
                         )
                         FilterChip(
                             selected = selectedTab == AuthTab.PHONE,
                             onClick = { selectedTab = AuthTab.PHONE },
-                            label = { Text("رقم الهاتف", fontSize = 11.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Phone,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = if (selectedTab == AuthTab.PHONE) Navy900 else WarningAmber
+                                )
+                            },
+                            label = { Text("الهاتف", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = WarningAmber,
                                 selectedLabelColor = Navy900,
@@ -384,11 +414,13 @@ fun LoginScreen(
                                             )
                                         },
                                         enabled = !isAuthenticating,
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 6.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFDADCE0)),
                                         colors = ButtonDefaults.buttonColors(containerColor = PureWhite),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(50.dp)
+                                            .height(52.dp)
                                             .testTag("google_login_primary_button")
                                     ) {
                                         if (isAuthenticating) {
@@ -398,16 +430,15 @@ fun LoginScreen(
                                                 strokeWidth = 2.dp
                                             )
                                         } else {
-                                            Icon(
-                                                imageVector = Icons.Default.Security,
-                                                contentDescription = null,
-                                                tint = Color(0xFF4285F4),
-                                                modifier = Modifier.size(20.dp)
+                                            androidx.compose.foundation.Image(
+                                                painter = painterResource(id = R.drawable.ic_google_logo),
+                                                contentDescription = "Google Logo",
+                                                modifier = Modifier.size(22.dp)
                                             )
                                             Spacer(modifier = Modifier.width(10.dp))
                                             Text(
-                                                text = "متابعة تسجيل الدخول عبر Google",
-                                                color = Navy900,
+                                                text = "تسجيل الدخول السريع عبر Google",
+                                                color = Color(0xFF1F1F1F),
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 13.sp
                                             )
@@ -480,13 +511,20 @@ fun LoginScreen(
                                             }
                                         },
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Navy700),
+                                        colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(48.dp)
+                                            .height(50.dp)
                                             .testTag("email_submit_button")
                                     ) {
-                                        Text("دخول بالبريد الإلكتروني", fontWeight = FontWeight.Bold, color = PureWhite)
+                                        Icon(
+                                            imageVector = Icons.Default.Login,
+                                            contentDescription = null,
+                                            tint = Navy900,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("دخول بالبريد الإلكتروني", fontWeight = FontWeight.Bold, color = Navy900)
                                     }
                                 }
                             }
@@ -524,6 +562,9 @@ fun LoginScreen(
                                             onValueChange = { otpInput = it },
                                             label = { Text("رمز التحقق (SMS)", color = PureWhite.copy(alpha = 0.8f)) },
                                             placeholder = { Text("أدخل رمز 4 أو 6 أرقام") },
+                                            leadingIcon = {
+                                                Icon(Icons.Default.Key, contentDescription = null, tint = SuccessGreen)
+                                            },
                                             singleLine = true,
                                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                             colors = OutlinedTextFieldDefaults.colors(
@@ -553,9 +594,16 @@ fun LoginScreen(
                                         colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(48.dp)
+                                            .height(50.dp)
                                             .testTag("phone_submit_button")
                                     ) {
+                                        Icon(
+                                            imageVector = if (!isOtpSent) Icons.Default.Send else Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = PureWhite,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         Text(
                                             text = if (!isOtpSent) "إرسال رمز التحقق (SMS)" else "تأكيد الدخول برقم الهاتف",
                                             fontWeight = FontWeight.Bold,
@@ -567,15 +615,28 @@ fun LoginScreen(
                         }
                     }
 
-                    // Guest / Skip Mode
-                    TextButton(
+                    // Guest / Skip Mode as a sleek stylish card button
+                    OutlinedButton(
                         onClick = onSkipGuest,
-                        modifier = Modifier.testTag("skip_guest_button")
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, WarningAmber.copy(alpha = 0.7f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = WarningAmber),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                            .testTag("skip_guest_button")
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Explore,
+                            contentDescription = null,
+                            tint = WarningAmber,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "تخطي الآن وتصفح البلاغات كزائر ←",
+                            text = "تصفح أمان فون كزائر لتفقد البلاغات وفحص IMEI ←",
                             color = WarningAmber,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }

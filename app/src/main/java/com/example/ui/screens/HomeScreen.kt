@@ -22,18 +22,23 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddAlert
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
+import com.example.ui.components.InAppNotificationBanner
+import com.example.ui.components.SearchWatchDialog
+import com.example.util.InAppNotificationManager
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -107,6 +112,8 @@ fun HomeScreen(
     val selectedGov by viewModel.filterGovernorate.collectAsStateWithLifecycle()
 
     var showGovDialog by remember { mutableStateOf(false) }
+    var showSearchWatchDialog by remember { mutableStateOf(false) }
+    val inAppNotification by InAppNotificationManager.currentInAppNotification.collectAsStateWithLifecycle()
 
     val latestUrgentAlert = alerts.firstOrNull { it.alertType == "URGENT_THEFT" } ?: alerts.firstOrNull()
 
@@ -150,6 +157,18 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    // Search Watch & FCM In-App Alerts shortcut
+                    IconButton(
+                        onClick = { showSearchWatchDialog = true },
+                        modifier = Modifier.testTag("search_watch_top_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddAlert,
+                            contentDescription = "مراقبة المواصفات وتنبيهات FCM",
+                            tint = WarningAmber
+                        )
+                    }
+
                     // Profile / Login shortcut
                     IconButton(
                         onClick = { viewModel.navigateTo(AppScreen.LOGIN) },
@@ -212,13 +231,16 @@ fun HomeScreen(
             )
         }
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(innerPadding)
         ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
             // 1. Urgent Alert Ticker
             item {
                 UrgentAlertTicker(
@@ -347,32 +369,79 @@ fun HomeScreen(
                 }
             }
 
-            // 4. Search Bar
+            // 4. Search Bar with FCM Watch Trigger
             item {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.searchQuery.value = it },
-                    placeholder = { Text("ابحث برقم IMEI، الموديل، الموقع، أو الاسم...") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Navy700)
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "مسح")
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.searchQuery.value = it },
+                        placeholder = { Text("ابحث برقم IMEI، الموديل، الموقع، أو الاسم...") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null, tint = Navy700)
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.searchQuery.value = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "مسح")
+                                }
                             }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("search_text_field")
+                    )
+
+                    // Quick Action: Watch this search
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Navy800.copy(alpha = 0.5f))
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsActive,
+                                contentDescription = null,
+                                tint = WarningAmber,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (searchQuery.isNotBlank()) "تفعيل تنبيه سحابي لبحث: [$searchQuery]" else "مراقبة مواصفات معينة وتنبيهي عند إضافتها (FCM)",
+                                fontSize = 11.sp,
+                                color = PureWhite,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("search_text_field")
-                )
+
+                        Button(
+                            onClick = { showSearchWatchDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(28.dp).testTag("watch_search_chip_button")
+                        ) {
+                            Text(
+                                text = "تفعيل المراقبة 🔔",
+                                color = Navy900,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
 
             // 5. Filter Chips Row
@@ -539,7 +608,23 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(64.dp))
             }
         }
+
+        // Floating in-app notification banner at top of screen
+        InAppNotificationBanner(
+            notification = inAppNotification,
+            onDismiss = { InAppNotificationManager.dismissCurrent() },
+            onOpenReport = { reportId -> viewModel.openReportDetails(reportId) },
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
+
+    if (showSearchWatchDialog) {
+        SearchWatchDialog(
+            initialSearchQuery = searchQuery,
+            onDismiss = { showSearchWatchDialog = false }
+        )
+    }
+}
 }
 
 @Composable

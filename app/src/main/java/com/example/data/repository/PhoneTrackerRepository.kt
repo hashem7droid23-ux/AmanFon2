@@ -65,7 +65,10 @@ class PhoneTrackerRepository(
                                     additionalNotes = cr.additionalNotes,
                                     createdAt = cr.createdAt?.toDate()?.time ?: System.currentTimeMillis()
                                 )
-                                reportDao.insertReport(entity)
+                                val insertedId = reportDao.insertReport(entity)
+                                if (insertedId != -1L) {
+                                    com.example.util.InAppNotificationManager.checkAndNotifyIfMatches(entity, context)
+                                }
                             }
                         }
                     }
@@ -105,6 +108,9 @@ class PhoneTrackerRepository(
                 android.util.Log.w("PhoneTrackerRepo", "Cloud sync pending: ${e.message}")
             }
         }
+
+        // Trigger in-app notification check if newly submitted report matches active watch criteria
+        com.example.util.InAppNotificationManager.checkAndNotifyIfMatches(report.copy(id = id), context)
 
         if (notifyBroadcast) {
             if (report.reportType == "STOLEN") {
