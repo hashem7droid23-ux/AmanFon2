@@ -60,9 +60,24 @@
         "createdAt": { "type": "string", "format": "date-time", "description": "Profile creation timestamp" }
       },
       "required": ["userId", "displayName", "createdAt"]
+    },
+    "SystemConfig": {
+      "title": "System Configuration",
+      "description": "Global application configuration including administrator email",
+      "type": "object",
+      "properties": {
+        "adminEmail": { "type": "string", "description": "Email address of the super administrator" },
+        "maintenanceMode": { "type": "boolean", "description": "Whether system is under maintenance" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["adminEmail"]
     }
   },
   "firestore": {
+    "/config/{docId}": {
+      "schema": "SystemConfig",
+      "description": "Global application configuration documents"
+    },
     "/reports/{reportId}": {
       "schema": "Report",
       "description": "Collection of all reported lost and stolen devices in Yemen"

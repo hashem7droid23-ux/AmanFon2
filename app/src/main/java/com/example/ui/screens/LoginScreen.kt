@@ -88,6 +88,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -403,12 +404,18 @@ fun LoginScreen(
                                                 onAuthSuccess = {
                                                     isAuthenticating = false
                                                     val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                                                    if (com.example.util.AdminManager.isUserAdmin(user)) {
-                                                        Toast.makeText(context, "👑 مرحباً بك يا باشمهندس هاشم! تم تفعيل صلاحيات المشرف العام الكاملة", Toast.LENGTH_LONG).show()
-                                                    } else {
-                                                        Toast.makeText(context, "مرحباً بك في أمان فون!", Toast.LENGTH_SHORT).show()
+                                                    coroutineScope.launch {
+                                                        val isMatch = com.example.util.AdminManager.verifyAndSetAdminState(
+                                                            user = user,
+                                                            firestoreService = com.example.data.remote.FirestorePhoneService(context)
+                                                        )
+                                                        if (isMatch) {
+                                                            Toast.makeText(context, "👑 مرحباً بك يا باشمهندس هاشم! تم تفعيل وضع المشرف العام عبر Firestore", Toast.LENGTH_LONG).show()
+                                                        } else {
+                                                            Toast.makeText(context, "مرحباً بك في أمان فون!", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                        onLoginSuccess()
                                                     }
-                                                    onLoginSuccess()
                                                 },
                                                 onAuthError = { err ->
                                                     isAuthenticating = false

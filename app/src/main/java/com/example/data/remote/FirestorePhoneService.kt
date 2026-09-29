@@ -126,4 +126,32 @@ class FirestorePhoneService(private val context: Context) {
             handleFirestoreError(e, OperationType.UPDATE, path)
         }
     }
+
+    /**
+     * Retrieves or initializes the 'config' document in Firestore with 'adminEmail' field.
+     */
+    suspend fun getOrInitAdminEmail(): String {
+        val path = "config/config"
+        return try {
+            val docRef = db.collection("config").document("config")
+            val snapshot = docRef.get().await()
+            if (snapshot.exists()) {
+                val email = snapshot.getString("adminEmail")
+                if (!email.isNullOrBlank()) {
+                    return email
+                }
+            }
+            // Document doesn't exist, create it with adminEmail = hashem7droid23@gmail.com
+            val initialConfig = hashMapOf<String, Any>(
+                "adminEmail" to "hashem7droid23@gmail.com",
+                "appName" to "أمان فون",
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            docRef.set(initialConfig).await()
+            "hashem7droid23@gmail.com"
+        } catch (e: Exception) {
+            Log.w("FirestorePhoneService", "Config check: ${e.message}")
+            "hashem7droid23@gmail.com"
+        }
+    }
 }

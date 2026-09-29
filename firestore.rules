@@ -62,5 +62,14 @@ service cloud.firestore {
       allow create, update: if isOwner(userId) && isValidUserProfile(request.resource.data);
       allow delete: if isOwner(userId);
     }
+
+    // System Config (e.g. admin settings, adminEmail)
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (request.auth.token.email == 'hashem7droid23@gmail.com') ||
+        (resource == null || resource.data.adminEmail == request.auth.token.email)
+      );
+    }
   }
 }
