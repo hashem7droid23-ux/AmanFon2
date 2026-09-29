@@ -104,24 +104,25 @@ jobs:
           path: release-output/AmanPhone-debug.apk
           retention-days: 30
 
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+      - name: Publish Direct APK to GitHub Releases
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: release-output/AmanPhone-debug.apk
-          name: "أمان فون - إصدار APK جديد (${{ github.ref_name }})"
-          tag_name: ${{ github.ref_name || 'v1.0.0-apk' }}
+          name: "📱 تطبيق أمان فون - ملف APK جاهز للتثبيت المباشر"
+          tag_name: "v1.0-apk"
+          make_latest: "true"
           draft: false
           prerelease: false
           body: |
             ## 📱 تطبيق أمان فون (Aman Phone)
-            المنظومة الوطنية لتتبع وحماية الهواتف المفقودة والمسروقة في الجمهورية اليمنية.
+            المنظومة الوطنية لتتبع وحماية الهواتف المفقودة والمسروقة في الجمهورية اليمنية 🇾🇪
             
             ### 👨‍💻 المطور والمصمم:
-            - **المهندس: هاشم القديمي (Hashem Al-Qodimy)**
-            - **فيسبوك:** [HashemAlQodimy](https://www.facebook.com/HashemAlQodimy)
+            - **المهندس:** هاشم القديمي (Hashem Al-Qodimy)
+            - **صفحة فيسبوك:** [HashemAlQodimy](https://www.facebook.com/HashemAlQodimy)
             
-            ### 📥 التحميل والتثبيت:
-            - قم بتحميل ملف `AmanPhone-debug.apk` المرفق وتثبيته مباشرة على جهازك بنظام أندرويد.
+            ### 📥 التحميل المباشر (ملف APK جاهز بدون ضغط):
+            - اضغط على الرابط بالأسفل: **`AmanPhone-debug.apk`** لتحميل وتثبيت التطبيق مباشرة وبدون الحاجة لفك الضغط.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
