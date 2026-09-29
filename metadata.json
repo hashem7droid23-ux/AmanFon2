@@ -1,0 +1,6 @@
+{
+  "name": "مفقود اليمن",
+  "description": "المنظومة الوطنية الموحدة في اليمن للإبلاغ عن الهواتف المسروقة والضائعة وفحص IMEI وإرسال تنبيهات عاجلة فورية لجميع المستخدمين ومحلات الهواتف",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

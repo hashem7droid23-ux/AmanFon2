@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "Report": {
+      "title": "Phone Report",
+      "description": "Report of a stolen, lost, or found phone in Yemen",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user filing the report" },
+        "reportType": { "type": "string", "enum": ["STOLEN", "LOST", "FOUND"], "description": "Type of report" },
+        "brand": { "type": "string", "description": "Phone manufacturer brand" },
+        "model": { "type": "string", "description": "Phone model specification" },
+        "imei1": { "type": "string", "description": "Primary 15-digit IMEI" },
+        "imei2": { "type": "string", "description": "Optional secondary IMEI" },
+        "serialNumber": { "type": "string", "description": "Optional serial number" },
+        "color": { "type": "string", "description": "Device color" },
+        "distinctiveMarks": { "type": "string", "description": "Distinctive marks or stickers" },
+        "governorate": { "type": "string", "description": "Yemen governorate" },
+        "district": { "type": "string", "description": "District or neighborhood" },
+        "incidentLocation": { "type": "string", "description": "Specific market or incident place" },
+        "contactName": { "type": "string", "description": "Name of contact person" },
+        "primaryPhone": { "type": "string", "description": "Primary Yemen telephone number" },
+        "whatsappNumber": { "type": "string", "description": "WhatsApp contact number" },
+        "rewardAmount": { "type": "integer", "description": "Financial reward in YER" },
+        "policeReportNumber": { "type": "string", "description": "Police report number if registered" },
+        "isRecovered": { "type": "boolean", "description": "Whether device was recovered" },
+        "additionalNotes": { "type": "string", "description": "Additional recovery details" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update server timestamp" }
+      },
+      "required": ["userId", "reportType", "brand", "model", "imei1", "governorate", "incidentLocation", "contactName", "primaryPhone", "isRecovered", "createdAt"]
+    },
+    "Alert": {
+      "title": "Broadcast Alert",
+      "description": "Urgent broadcast alert distributed to community and phone shops",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string", "description": "UID of author or admin" },
+        "reportId": { "type": "string", "description": "Associated report document ID" },
+        "title": { "type": "string", "description": "Alert title" },
+        "message": { "type": "string", "description": "Alert message body" },
+        "governorate": { "type": "string", "description": "Target governorate in Yemen" },
+        "deviceModel": { "type": "string", "description": "Device model summary" },
+        "imeiSnippet": { "type": "string", "description": "Masked IMEI snippet" },
+        "alertType": { "type": "string", "description": "URGENT_THEFT, DEVICE_FOUND, COMMUNITY_ALERT, or RECOVERY" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Broadcast timestamp" }
+      },
+      "required": ["authorId", "title", "message", "governorate", "alertType", "timestamp"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile for citizen or verified Yemeni phone shop owner",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user" },
+        "displayName": { "type": "string", "description": "Full name" },
+        "phoneNumber": { "type": "string", "description": "Phone number" },
+        "governorate": { "type": "string", "description": "Governorate in Yemen" },
+        "userRole": { "type": "string", "enum": ["CITIZEN", "SHOP_OWNER", "TECHNICIAN"], "description": "Role in ecosystem" },
+        "shopName": { "type": "string", "description": "Shop name if owner" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Profile creation timestamp" }
+      },
+      "required": ["userId", "displayName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Collection of all reported lost and stolen devices in Yemen"
+    },
+    "/alerts/{alertId}": {
+      "schema": "Alert",
+      "description": "Collection of real-time community and theft broadcast alerts"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document indexed by auth UID"
+    }
+  }
+}

@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidReport(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.reportType in ['STOLEN', 'LOST', 'FOUND'] &&
+             data.brand is string && data.brand.size() >= 2 && data.brand.size() <= 50 &&
+             data.model is string && data.model.size() >= 2 && data.model.size() <= 100 &&
+             data.imei1 is string && data.imei1.size() >= 8 && data.imei1.size() <= 20 &&
+             data.governorate is string && data.governorate.size() >= 2 &&
+             data.incidentLocation is string && data.incidentLocation.size() >= 2 &&
+             data.contactName is string && data.contactName.size() >= 2 &&
+             data.primaryPhone is string && data.primaryPhone.size() >= 6 &&
+             data.isRecovered is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time)) &&
+             (!('rewardAmount' in data) || data.rewardAmount is int);
+    }
+
+    function isValidAlert(data) {
+      return data.authorId is string && data.authorId == request.auth.uid &&
+             data.title is string && data.title.size() >= 3 && data.title.size() <= 150 &&
+             data.message is string && data.message.size() >= 3 && data.message.size() <= 500 &&
+             data.governorate is string &&
+             data.alertType is string &&
+             data.timestamp is timestamp && data.timestamp <= request.time;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 2 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    // Reports: Any authenticated citizen or shop can read to search IMEI / find devices
+    match /reports/{reportId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidReport(request.resource.data);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidReport(request.resource.data);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // Broadcast Alerts: Real-time alerts for lost/stolen devices across governorates
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidAlert(request.resource.data);
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.authorId);
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow delete: if isOwner(userId);
+    }
+  }
+}
