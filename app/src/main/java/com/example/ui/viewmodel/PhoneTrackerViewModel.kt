@@ -23,7 +23,8 @@ enum class AppScreen {
     NEW_REPORT,
     ALERTS,
     REPORT_DETAILS,
-    SHOPS_GUIDE
+    SHOPS_GUIDE,
+    ADMIN_DASHBOARD
 }
 
 sealed class ImeiCheckState {
@@ -220,6 +221,14 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
             return
         }
 
+        // Admin Security Enforcement: Check if user or phone number is banned
+        if (com.example.util.AdminManager.isBanned(primaryPhone) || 
+            com.example.util.AdminManager.isBanned(whatsappNumber) || 
+            com.example.util.AdminManager.isBanned(contactName)) {
+            onError("⛔ هذا الحساب أو رقم الهاتف محظور من قبل المشرف العام (م. هاشم القديمي) لمخالفته شروط وسياسات المنظومة.")
+            return
+        }
+
         val rewardLong = rewardAmountStr.filter { it.isDigit() }.toLongOrNull() ?: 0L
 
         viewModelScope.launch {
@@ -273,6 +282,19 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
                 handleBack()
             }
         }
+    }
+
+    fun adminDeleteReport(reportId: Long) {
+        viewModelScope.launch {
+            repository.deleteReport(reportId)
+            if (_selectedReportId.value == reportId) {
+                handleBack()
+            }
+        }
+    }
+
+    fun sendSupervisorBroadcast(title: String, message: String, isUrgent: Boolean, context: android.content.Context) {
+        com.example.util.AdminManager.sendSupervisorBroadcast(title, message, isUrgent, context, repository)
     }
 
     fun markAlertRead(alertId: Long) {

@@ -114,6 +114,7 @@ fun HomeScreen(
     var showGovDialog by remember { mutableStateOf(false) }
     var showSearchWatchDialog by remember { mutableStateOf(false) }
     val inAppNotification by InAppNotificationManager.currentInAppNotification.collectAsStateWithLifecycle()
+    val isSuperAdmin by com.example.util.AdminManager.isSuperAdmin.collectAsStateWithLifecycle()
 
     val latestUrgentAlert = alerts.firstOrNull { it.alertType == "URGENT_THEFT" } ?: alerts.firstOrNull()
 
@@ -157,6 +158,16 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    // Admin Crown shortcut (Exclusive to Hashem)
+                    if (isSuperAdmin) {
+                        IconButton(
+                            onClick = { viewModel.navigateTo(AppScreen.ADMIN_DASHBOARD) },
+                            modifier = Modifier.testTag("admin_dashboard_top_button")
+                        ) {
+                            Text("👑", fontSize = 20.sp)
+                        }
+                    }
+
                     // Search Watch & FCM In-App Alerts shortcut
                     IconButton(
                         onClick = { showSearchWatchDialog = true },
@@ -248,6 +259,49 @@ fun HomeScreen(
                     unreadCount = unreadCount,
                     onClick = { viewModel.navigateTo(AppScreen.ALERTS) }
                 )
+            }
+
+            // 1.2. Admin Executive Quick Access Banner (Visible ONLY to Hashem)
+            if (isSuperAdmin) {
+                item {
+                    Card(
+                        onClick = { viewModel.navigateTo(AppScreen.ADMIN_DASHBOARD) },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = Navy800),
+                        border = androidx.compose.foundation.BorderStroke(1.2.dp, WarningAmber),
+                        modifier = Modifier.fillMaxWidth().testTag("admin_quick_card")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("👑", fontSize = 22.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "لوحة تحكم المشرف العام (المهندس هاشم القديمي)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = WarningAmber
+                                    )
+                                    Text(
+                                        text = "صلاحيات كاملة: حذف أي بلاغ، حظر الأرقام، وبث التعاميم",
+                                        fontSize = 10.sp,
+                                        color = PureWhite.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                            Text("لوحة التحكم ←", fontSize = 11.sp, color = WarningAmber, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
 
             // 1.5. Firebase Google Cloud Sync & Auth Banner

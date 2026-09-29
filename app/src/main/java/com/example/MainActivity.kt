@@ -75,8 +75,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 1. Initialize Android Notification Channels
+        // 1. Initialize Android Notification Channels & Admin Manager
         NotificationHelper.setupNotificationChannels(this)
+        com.example.util.AdminManager.initialize(this)
 
         // 2. Request Notification Permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -284,6 +285,10 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                     AppScreen.SHOPS_GUIDE -> YemenGuideScreen(
                         onBack = { viewModel.handleBack() },
                         onNavigateToCheckImei = { viewModel.navigateTo(AppScreen.CHECK_IMEI) }
+                    )
+                    AppScreen.ADMIN_DASHBOARD -> com.example.ui.screens.AdminDashboardScreen(
+                        viewModel = viewModel,
+                        onBack = { viewModel.handleBack() }
                     )
                 }
             }

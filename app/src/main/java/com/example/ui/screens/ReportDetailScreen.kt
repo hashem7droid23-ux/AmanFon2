@@ -83,6 +83,7 @@ fun ReportDetailScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val report by viewModel.selectedReport.collectAsStateWithLifecycle()
+    val isSuperAdmin by com.example.util.AdminManager.isSuperAdmin.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -418,66 +419,95 @@ fun ReportDetailScreen(
                     }
                 }
 
-                // 5. Recovery Status Toggle & Delete
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                // 5. Exclusive Admin Actions (Visible ONLY to Hashem / Super Admin)
+                if (isSuperAdmin) {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Navy800),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, WarningAmber),
+                        modifier = Modifier.fillMaxWidth().testTag("admin_detail_actions_card")
                     ) {
-                        Text(
-                            text = "إدارة حالة البلاغ",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-
-                        Button(
-                            onClick = {
-                                viewModel.toggleRecovered(item.id, !item.isRecovered)
-                                Toast.makeText(
-                                    context,
-                                    if (!item.isRecovered) "مبروك! تم تسجيل استرجاع الجهاز ونشر إشعار بالبشرى" else "تم إلغاء حالة الاسترجاع",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (item.isRecovered) Color(0xFF64748B) else SuccessGreen
-                            ),
-                            shape = RoundedCornerShape(10.dp),
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(46.dp)
-                                .testTag("toggle_recovery_button")
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (item.isRecovered) "إلغاء وضع الاسترجاع" else "تأكيد: تم بحمد الله استرجاع الهاتف 🎉",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("👑", fontSize = 22.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "صلاحيات المشرف العام (المهندس هاشم القديمي)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = WarningAmber
+                                    )
+                                    Text(
+                                        text = "تحكم إداري كامل وحصري بهذا البلاغ وصاحبه",
+                                        fontSize = 10.sp,
+                                        color = PureWhite.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
 
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.deleteReport(item.id)
-                                Toast.makeText(context, "تم حذف البلاغ", Toast.LENGTH_SHORT).show()
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AlertRed),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                                .testTag("delete_report_button")
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = null, tint = AlertRed)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("حذف هذا البلاغ", fontSize = 12.sp, color = AlertRed)
+                            Button(
+                                onClick = {
+                                    viewModel.toggleRecovered(item.id, !item.isRecovered)
+                                    Toast.makeText(
+                                        context,
+                                        if (!item.isRecovered) "تم تسجيل استرجاع الجهاز رسمياً كمشرف" else "تم إلغاء حالة الاسترجاع",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (item.isRecovered) Color(0xFF64748B) else SuccessGreen
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth().height(44.dp).testTag("admin_toggle_recovery_btn")
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (item.isRecovered) "إلغاء وضع الاسترجاع" else "تأكيد وتوثيق استرجاع الجهاز ✅",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        viewModel.adminDeleteReport(item.id)
+                                        Toast.makeText(context, "تم حذف البلاغ نهائياً من قبل المشرف العام", Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.weight(1f).height(44.dp).testTag("admin_delete_report_button")
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = null, tint = PureWhite, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("حذف البلاغ", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        com.example.util.AdminManager.banAccount(
+                                            item.primaryPhone,
+                                            "حظر بواسطة المشرف في البلاغ #${item.id}"
+                                        )
+                                        Toast.makeText(context, "تم حظر رقم [${item.primaryPhone}] بنجاح 🚫", Toast.LENGTH_LONG).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.weight(1f).height(44.dp).testTag("admin_ban_owner_button")
+                                ) {
+                                    Text("🚫 حظر الرقم", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                                }
+                            }
                         }
                     }
                 }

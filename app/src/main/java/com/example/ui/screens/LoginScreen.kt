@@ -402,7 +402,12 @@ fun LoginScreen(
                                                 credentialManager = credentialManager,
                                                 onAuthSuccess = {
                                                     isAuthenticating = false
-                                                    Toast.makeText(context, "مرحباً بك في أمان فون!", Toast.LENGTH_SHORT).show()
+                                                    val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                                                    if (com.example.util.AdminManager.isUserAdmin(user)) {
+                                                        Toast.makeText(context, "👑 مرحباً بك يا باشمهندس هاشم! تم تفعيل صلاحيات المشرف العام الكاملة", Toast.LENGTH_LONG).show()
+                                                    } else {
+                                                        Toast.makeText(context, "مرحباً بك في أمان فون!", Toast.LENGTH_SHORT).show()
+                                                    }
                                                     onLoginSuccess()
                                                 },
                                                 onAuthError = { err ->
@@ -442,6 +447,51 @@ fun LoginScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 13.sp
                                             )
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Navy900.copy(alpha = 0.8f),
+                                        border = BorderStroke(1.dp, WarningAmber.copy(alpha = 0.5f)),
+                                        modifier = Modifier.fillMaxWidth().testTag("supervisor_account_card")
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("👑", fontSize = 16.sp)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Column {
+                                                    Text(
+                                                        text = "حساب المشرف العام المعتمد للمنظومة:",
+                                                        fontSize = 10.sp,
+                                                        color = PureWhite.copy(alpha = 0.8f)
+                                                    )
+                                                    Text(
+                                                        text = com.example.util.AdminManager.SUPER_ADMIN_EMAIL,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = WarningAmber
+                                                    )
+                                                }
+                                            }
+
+                                            // Quick button for Hashem to activate supervisor mode if on test emulator
+                                            TextButton(
+                                                onClick = {
+                                                    com.example.util.AdminManager.toggleAdminSimulation(true)
+                                                    Toast.makeText(context, "👑 تم تفعيل وضع المشرف العام للمهندس هاشم القديمي!", Toast.LENGTH_SHORT).show()
+                                                    onLoginSuccess()
+                                                }
+                                            ) {
+                                                Text("دخول كمشرف ⚡", fontSize = 10.sp, color = SuccessGreen, fontWeight = FontWeight.Bold)
+                                            }
                                         }
                                     }
                                 }

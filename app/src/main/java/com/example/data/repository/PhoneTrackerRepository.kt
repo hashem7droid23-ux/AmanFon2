@@ -133,6 +133,17 @@ class PhoneTrackerRepository(
         return id
     }
 
+    suspend fun insertSupervisorAlert(alert: AlertEntity) {
+        alertDao.insertAlert(alert)
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) {
+            try {
+                firestoreService.publishAlertToCloud(alert, "supervisor_broadcast_${System.currentTimeMillis()}")
+            } catch (e: Exception) {
+                android.util.Log.w("PhoneTrackerRepo", "Cloud sync supervisor alert: ${e.message}")
+            }
+        }
+    }
+
     suspend fun updateRecoveryStatus(id: Long, recovered: Boolean) {
         reportDao.updateRecoveryStatus(id, recovered)
         val report = reportDao.getReportById(id)
