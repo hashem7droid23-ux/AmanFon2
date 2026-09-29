@@ -14,10 +14,10 @@ android {
 
   defaultConfig {
     applicationId = "com.aistudio.lostphone.ymndx"
-    minSdk = 23
-    targetSdk = 36
-    versionCode = 2
-    versionName = "1.1"
+    minSdk = 24
+    targetSdk = 35
+    versionCode = 3
+    versionName = "1.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -59,6 +59,12 @@ android {
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
+  }
+  packaging {
+    resources {
+      excludes += "/META-INF/{AL2.0,LGPL2.1}"
+      excludes += "META-INF/*.version"
+    }
   }
 }
 
