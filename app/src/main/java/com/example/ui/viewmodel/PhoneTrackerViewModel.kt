@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class AppScreen {
+    SPLASH,
     LOGIN,
     FEED,
     CHECK_IMEI,
@@ -55,13 +56,17 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
     }
 
     // Navigation State
-    private val _currentScreen = MutableStateFlow(AppScreen.LOGIN)
+    private val _currentScreen = MutableStateFlow(AppScreen.SPLASH)
     val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
 
     private val _screenHistory = mutableListOf<AppScreen>()
 
     private val _selectedReportId = MutableStateFlow<Long?>(null)
     val selectedReportId: StateFlow<Long?> = _selectedReportId.asStateFlow()
+
+    fun finishSplash() {
+        _currentScreen.value = AppScreen.LOGIN
+    }
 
     // Filters and Search
     val searchQuery = MutableStateFlow("")

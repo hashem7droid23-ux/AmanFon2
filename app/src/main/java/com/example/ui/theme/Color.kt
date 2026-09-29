@@ -17,6 +17,9 @@ val WarningAmberLight = Color(0xFFFFF8E1)
 
 val SuccessGreen = Color(0xFF00A86B)
 val SuccessGreenLight = Color(0xFFE8F5E9)
+val SafeGreen = Color(0xFF00A86B)
+val YemenGold = Color(0xFFFFB703)
+val GoldAlert = Color(0xFFFFB703)
 
 val AccentCyan = Color(0xFF00B4D8)
 val AccentCyanLight = Color(0xFFE0F7FA)
