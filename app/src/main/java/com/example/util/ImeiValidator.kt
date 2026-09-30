@@ -2,10 +2,10 @@ package com.example.util
 
 object ImeiValidator {
     /**
-     * Cleans an IMEI string by keeping only digits.
+     * Cleans an IMEI string by keeping only ASCII digits accepted by Luhn and the backend.
      */
     fun clean(raw: String): String {
-        return raw.filter { it.isDigit() }
+        return raw.filter { it in '0'..'9' }
     }
 
     /**

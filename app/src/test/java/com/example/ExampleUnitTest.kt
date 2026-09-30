@@ -15,6 +15,18 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun testImeiCleanerRejectsNonAsciiDigits() {
+        assertEquals("490154203237518", ImeiValidator.clean("٤٩٠-490154203237518"))
+        assertFalse(ImeiValidator.isValidLuhn("٤٩٠١٥٤٢٠٣٢٣٧٥١٨"))
+    }
+
+    @Test
+    fun testValidAndInvalidImeiChecksums() {
+        assertTrue(ImeiValidator.isValidLuhn("490154203237518"))
+        assertFalse(ImeiValidator.isValidLuhn("490154203237519"))
+    }
+
+    @Test
     fun testImeiMasking() {
         val masked = ImeiValidator.mask("354892110485921")
         assertTrue(masked.startsWith("3548"))
