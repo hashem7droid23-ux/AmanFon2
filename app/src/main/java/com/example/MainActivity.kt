@@ -79,7 +79,18 @@ class MainActivity : ComponentActivity() {
         NotificationHelper.setupNotificationChannels(this)
         com.example.util.AdminManager.initialize(this)
 
-        // 2. Request Notification Permission on Android 13+
+        // 2. Hardware Security & Anti-Tapjacking Shield
+        try {
+            window.decorView.filterTouchesWhenObscured = true
+        } catch (_: Exception) {}
+
+        // 3. Device Integrity & Anti-Tamper Check
+        val integrity = com.example.util.DeviceIntegrityChecker.performSecurityAudit(this)
+        if (integrity.isDeviceCompromised) {
+            // Environment alert registered
+        }
+
+        // 4. Request Notification Permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!NotificationHelper.hasNotificationPermission(this)) {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)

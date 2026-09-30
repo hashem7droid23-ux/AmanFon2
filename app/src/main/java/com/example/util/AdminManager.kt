@@ -124,9 +124,15 @@ object AdminManager {
     }
 
     private fun loadBannedAccounts(prefs: SharedPreferences) {
-        val jsonStr = prefs.getString(KEY_BANNED_ACCOUNTS, null)
-        if (jsonStr != null) {
+        val rawData = prefs.getString(KEY_BANNED_ACCOUNTS, null)
+        if (rawData != null) {
             try {
+                // فك التشفير العتادي للبيانات المخزنة
+                val jsonStr = if (rawData.startsWith("[") || rawData.startsWith("{")) {
+                    rawData // Plaintext legacy migration
+                } else {
+                    AmanSecurityEngine.decrypt(rawData)
+                }
                 val array = JSONArray(jsonStr)
                 val list = mutableListOf<BannedAccount>()
                 for (i in 0 until array.length()) {
@@ -164,7 +170,9 @@ object AdminManager {
                 }
                 array.put(obj)
             }
-            prefs.edit().putString(KEY_BANNED_ACCOUNTS, array.toString()).apply()
+            // تشفير محتوى الحسابات المحظورة بنظام AES-256 قبل الحفظ في القرص
+            val encryptedPayload = AmanSecurityEngine.encrypt(array.toString())
+            prefs.edit().putString(KEY_BANNED_ACCOUNTS, encryptedPayload).apply()
         } catch (_: Exception) {}
     }
 
