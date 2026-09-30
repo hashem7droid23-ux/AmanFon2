@@ -29,7 +29,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.Chat
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -411,7 +411,7 @@ fun ReportDetailScreen(
                                     .height(46.dp)
                                     .testTag("detail_whatsapp_button")
                             ) {
-                                Icon(Icons.Outlined.Chat, contentDescription = null, tint = PureWhite)
+                                Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null, tint = PureWhite)
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("مراسلة واتساب", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             }

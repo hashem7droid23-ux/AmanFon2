@@ -37,6 +37,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Code
@@ -44,16 +47,13 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.ui.res.painterResource
 import com.example.R
@@ -575,7 +575,7 @@ fun LoginScreen(
                                             .testTag("email_submit_button")
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Login,
+                                            imageVector = Icons.AutoMirrored.Filled.Login,
                                             contentDescription = null,
                                             tint = Navy900,
                                             modifier = Modifier.size(18.dp)
@@ -655,7 +655,7 @@ fun LoginScreen(
                                             .testTag("phone_submit_button")
                                     ) {
                                         Icon(
-                                            imageVector = if (!isOtpSent) Icons.Default.Send else Icons.Default.Check,
+                                            imageVector = if (!isOtpSent) Icons.AutoMirrored.Filled.Send else Icons.Default.Check,
                                             contentDescription = null,
                                             tint = PureWhite,
                                             modifier = Modifier.size(18.dp)
@@ -803,7 +803,7 @@ fun LoginScreen(
                             modifier = Modifier.weight(1f).testTag("developer_whatsapp_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Chat,
+                                imageVector = Icons.AutoMirrored.Outlined.Chat,
                                 contentDescription = "واتساب",
                                 tint = PureWhite,
                                 modifier = Modifier.size(16.dp)

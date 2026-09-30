@@ -32,7 +32,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.Chat
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -527,7 +527,7 @@ fun CheckImeiScreen(
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Icon(Icons.Outlined.Chat, contentDescription = null, tint = PureWhite, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null, tint = PureWhite, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text("واتساب", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }

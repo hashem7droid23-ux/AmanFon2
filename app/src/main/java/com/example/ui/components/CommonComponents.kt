@@ -26,8 +26,8 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -452,7 +452,7 @@ fun ReportItemCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Chat,
+                                imageVector = Icons.AutoMirrored.Outlined.Chat,
                                 contentDescription = "واتساب",
                                 tint = SuccessGreen,
                                 modifier = Modifier.size(14.dp)

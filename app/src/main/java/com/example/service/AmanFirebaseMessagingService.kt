@@ -9,6 +9,7 @@ import com.google.firebase.messaging.RemoteMessage
 
 class AmanFirebaseMessagingService : FirebaseMessagingService() {
 
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d(TAG, "New FCM Token registered: $token")

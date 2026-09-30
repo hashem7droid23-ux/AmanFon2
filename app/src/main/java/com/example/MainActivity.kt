@@ -22,9 +22,9 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Badge
@@ -238,7 +238,7 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                     NavigationBarItem(
                         selected = currentScreen == AppScreen.SHOPS_GUIDE,
                         onClick = { viewModel.navigateTo(AppScreen.SHOPS_GUIDE) },
-                        icon = { Icon(Icons.Default.MenuBook, contentDescription = "دليل المحلات") },
+                        icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "دليل المحلات") },
                         label = { Text("دليل الأمان", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = PureWhite,
