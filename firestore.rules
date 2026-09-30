@@ -10,6 +10,12 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isVerifiedAdmin() {
+      return isAuthenticated() &&
+             request.auth.token.email == 'hashem7droid23@gmail.com' &&
+             request.auth.token.email_verified == true;
+    }
+
     function isValidReport(data) {
       return data.userId is string && data.userId == request.auth.uid &&
              data.reportType in ['STOLEN', 'LOST', 'FOUND'] &&
@@ -63,13 +69,13 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
-    // System Config (e.g. admin settings, adminEmail)
+    // Only the fixed, verified administrator can initialize or change app configuration.
+    // Never derive authorization from a client-writable adminEmail field.
     match /config/{docId} {
-      allow read: if true;
-      allow write: if isAuthenticated() && (
-        (request.auth.token.email == 'hashem7droid23@gmail.com') ||
-        (resource == null || resource.data.adminEmail == request.auth.token.email)
-      );
+      allow read: if docId == 'config';
+      allow create, update: if docId == 'config' && isVerifiedAdmin() &&
+        request.resource.data.adminEmail == 'hashem7droid23@gmail.com';
+      allow delete: if false;
     }
   }
 }
