@@ -128,10 +128,11 @@ class FirestorePhoneService(private val context: Context) {
     }
 
     /**
-     * Retrieves or initializes the 'config' document in Firestore with 'adminEmail' field.
+     * Retrieves the 'config' document in Firestore with 'adminEmail' field.
+     * Only the verified super admin is allowed to create it (enforced by firestore.rules too).
      */
     suspend fun getOrInitAdminEmail(): String {
-        val path = "config/config"
+        val defaultAdmin = "hashem7droid23@gmail.com"
         return try {
             val docRef = db.collection("config").document("config")
             val snapshot = docRef.get().await()
@@ -141,17 +142,24 @@ class FirestorePhoneService(private val context: Context) {
                     return email
                 }
             }
-            // Document doesn't exist, create it with adminEmail = hashem7droid23@gmail.com
-            val initialConfig = hashMapOf<String, Any>(
-                "adminEmail" to "hashem7droid23@gmail.com",
-                "appName" to "أمان فون",
-                "updatedAt" to FieldValue.serverTimestamp()
-            )
-            docRef.set(initialConfig).await()
-            "hashem7droid23@gmail.com"
+
+            val current = auth.currentUser
+            val isVerifiedSuperAdmin = current != null &&
+                current.isEmailVerified &&
+                current.email.equals(defaultAdmin, ignoreCase = true)
+
+            if (isVerifiedSuperAdmin) {
+                val initialConfig = hashMapOf<String, Any>(
+                    "adminEmail" to defaultAdmin,
+                    "appName" to "أمان فون",
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+                docRef.set(initialConfig).await()
+            }
+            defaultAdmin
         } catch (e: Exception) {
             Log.w("FirestorePhoneService", "Config check: ${e.message}")
-            "hashem7droid23@gmail.com"
+            defaultAdmin
         }
     }
 }

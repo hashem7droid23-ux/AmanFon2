@@ -1,0 +1,162 @@
+# انقل هذا الملف إلى: .github/workflows/build-apk.yml (استبدل الملف القديم)
+name: Build Aman Phone APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags:
+      - "v*"
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build signed release APK
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      SECRET_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+      SECRET_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+      SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
+      - name: Restore or Generate debug.keystore
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+          if [ ! -f debug.keystore ]; then
+            keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Ensure google-services.json exists
+        run: |
+          if [ ! -f app/google-services.json ]; then
+            echo "Restoring google-services.json..."
+            cat << 'EOF' > app/google-services.json
+          {
+            "project_info": {
+              "project_number": "550389528405",
+              "project_id": "gen-lang-client-0428838696",
+              "storage_bucket": "gen-lang-client-0428838696.firebasestorage.app"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:550389528405:android:0b2a98a973fd00ba2221dc",
+                  "android_client_info": {
+                    "package_name": "com.aistudio.lostphone.ymndx"
+                  }
+                },
+                "oauth_client": [
+                  {
+                    "client_id": "550389528405-cap0jq2qp73mi3u8a95h37r206o7ubtd.apps.googleusercontent.com",
+                    "client_type": 3
+                  }
+                ],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyC_lRrLC4BobUJLMNsOyGGXGafiipWiNJI"
+                  }
+                ],
+                "services": {}
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+          fi
+
+      - name: Ensure .env file exists
+        run: |
+          if [ ! -f .env ]; then
+            touch .env
+          fi
+
+      - name: Prepare release signing key
+        run: |
+          KEYSTORE="$RUNNER_TEMP/release.jks"
+          if [ -n "$SECRET_KEYSTORE_BASE64" ] && [ -n "$SECRET_STORE_PASSWORD" ]; then
+            echo "Using permanent release key from repository secrets."
+            echo "$SECRET_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE"
+            echo "STORE_PASSWORD=$SECRET_STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=${SECRET_KEY_PASSWORD:-$SECRET_STORE_PASSWORD}" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=${SECRET_KEY_ALIAS:-upload}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Release signing secrets are missing. Signing with a TEMPORARY key. Add RELEASE_KEYSTORE_BASE64 and STORE_PASSWORD secrets so users can update without uninstalling."
+            TMP_PASS="amanfon-$(openssl rand -hex 12)"
+            echo "::add-mask::$TMP_PASS"
+            keytool -genkeypair -v -keystore "$KEYSTORE" -alias upload -storepass "$TMP_PASS" -keypass "$TMP_PASS" -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Aman Phone,O=AmanFon,C=YE"
+            echo "STORE_PASSWORD=$TMP_PASS" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$TMP_PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=upload" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+
+      - name: Read app version
+        run: |
+          VERSION_NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Prepare APK Artifact
+        run: |
+          mkdir -p release-output
+          cp app/build/outputs/apk/release/app-release.apk "release-output/AmanPhone-v${VERSION_NAME}.apk"
+
+      - name: Upload APK to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmanPhone-release-apk
+          path: release-output/*.apk
+          retention-days: 30
+
+      - name: Publish Release to GitHub
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-output/*.apk
+          name: "📱 أمان فون v${{ env.VERSION_NAME }} - نسخة Release موقّعة"
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', env.VERSION_NAME) }}
+          target_commitish: ${{ github.sha }}
+          make_latest: "true"
+          draft: false
+          prerelease: false
+          body: |
+            ## 📱 تطبيق أمان فون (Aman Phone) v${{ env.VERSION_NAME }}
+            المنظومة الوطنية لتتبع وحماية الهواتف المفقودة والمسروقة في الجمهورية اليمنية 🇾🇪
+
+            ### 🔐 الجديد في هذا الإصدار
+            - إغلاق ثغرة الاستيلاء على صلاحيات المشرف وتشديد قواعد Firestore
+            - وضع محاكاة المشرف والبيانات التجريبية أصبحت لنسخ التطوير فقط
+            - تفعيل التعمية (R8) وحذف السجلات من النسخة النهائية
+
+            ### 👨‍💻 المطور والمصمم:
+            - **المهندس:** هاشم القديمي (Hashem Al-Qodimy)
+            - **صفحة فيسبوك:** [HashemAlQodimy](https://www.facebook.com/HashemAlQodimy)
+
+            ### 📥 التحميل المباشر
+            - حمّل ملف **`AmanPhone-v${{ env.VERSION_NAME }}.apk`** بالأسفل وثبّته مباشرة.
+            - إذا عندك نسخة debug قديمة مثبتة، احذفها أولاً ثم ثبّت هذه النسخة.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

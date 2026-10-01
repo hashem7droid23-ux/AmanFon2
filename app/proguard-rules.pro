@@ -4,7 +4,7 @@
 
 # 1. إخفاء أسماء ملفات المصدر ومعلومات التتبع البرمجي لحماية الكود من الهندسة العكسية
 -renamesourcefileattribute ""
--keepattributes Exceptions,InnerClasses,Signature
+-keepattributes Exceptions,InnerClasses,Signature,EnclosingMethod
 
 # 2. إزالة كافة سجلات النظام (Logcat Stripping) لمنع تسريب بيانات IMEI وأرقام الهواتف
 -assumenosideeffects class android.util.Log {
@@ -28,14 +28,33 @@
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
 -keep class androidx.credentials.** { *; }
+-keep class com.google.android.libraries.identity.googleid.** { *; }
 
-# 5. حماية نماذج بيانات أمان فون من حذف الحقول أثناء التحسين
+# 5. حماية نماذج بيانات أمان فون من حذف الحقول أثناء التحسين (Firestore toObjects يعتمد على الانعكاس)
 -keep class com.example.data.model.** { *; }
 -keep class com.example.data.remote.** { *; }
 -keep class com.example.util.AmanSecurityEngine { *; }
 -keep class com.example.util.DeviceIntegrityChecker { *; }
+-keep class com.example.service.** { *; }
 
-# 6. حماية مكونات واجهات Jetpack Compose
+# 6. Kotlin metadata (Moshi / reflection)
+-keep class kotlin.Metadata { *; }
+-keepclassmembers class kotlin.Metadata { public <methods>; }
+
+# 7. حماية مكونات واجهات Jetpack Compose
 -keep class androidx.compose.** { *; }
 -dontwarn androidx.compose.**
 
+# 8. تحذيرات مكتبات اختيارية غير موجودة على أندرويد (OkHttp / Retrofit / Moshi / gRPC)
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+-dontwarn okhttp3.internal.platform.**
+-dontwarn javax.annotation.**
+-dontwarn javax.naming.**
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn com.google.j2objc.annotations.**
+-dontwarn org.codehaus.mojo.animal_sniffer.**
+-dontwarn kotlinx.serialization.**
+-dontwarn io.grpc.**
+-dontwarn com.google.firebase.appcheck.debug.**

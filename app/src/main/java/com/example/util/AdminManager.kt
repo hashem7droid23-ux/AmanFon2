@@ -2,6 +2,7 @@ package com.example.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.BuildConfig
 import com.example.data.model.AlertEntity
 import com.example.data.model.ReportEntity
 import com.example.data.repository.PhoneTrackerRepository
@@ -45,9 +46,30 @@ object AdminManager {
     private var sharedPreferences: SharedPreferences? = null
     private var cachedAdminEmail: String = SUPER_ADMIN_EMAIL
 
+    /**
+     * Admin simulation is a developer-only tool. It is ignored completely in release builds
+     * so nobody can unlock supervisor controls on a production install.
+     */
+    private fun isSimulationActive(): Boolean {
+        if (!BuildConfig.DEBUG) return false
+        return sharedPreferences?.getBoolean(KEY_ADMIN_SIMULATION, false) ?: false
+    }
+
+    /** Only verified emails (e.g. Google Sign-In) are trusted for admin access. */
+    private fun trustedEmailOf(user: FirebaseUser?): String? {
+        if (user == null || !user.isEmailVerified) return null
+        return user.email?.trim()?.takeIf { it.isNotBlank() }
+    }
+
     fun initialize(context: Context) {
         val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         sharedPreferences = prefs
+
+        // Make sure a stale simulation flag can never survive into a release build
+        if (!BuildConfig.DEBUG && prefs.getBoolean(KEY_ADMIN_SIMULATION, false)) {
+            prefs.edit().remove(KEY_ADMIN_SIMULATION).apply()
+        }
+
         loadBannedAccounts(prefs)
 
         val firestoreService = com.example.data.remote.FirestorePhoneService(context)
@@ -67,18 +89,18 @@ object AdminManager {
     /**
      * Checks current user's email against the 'adminEmail' field from Firestore 'config' document.
      * If matched, sets 'isAdmin' state to true to enable supervisor controls across the app.
+     * Note: the real enforcement happens in firestore.rules; this only controls the UI.
      */
     suspend fun verifyAndSetAdminState(
         user: FirebaseUser?,
         firestoreService: com.example.data.remote.FirestorePhoneService? = null
     ): Boolean {
-        val isSimulation = sharedPreferences?.getBoolean(KEY_ADMIN_SIMULATION, false) ?: false
-        if (isSimulation) {
+        if (isSimulationActive()) {
             _isAdmin.value = true
             return true
         }
 
-        val userEmail = user?.email?.trim()
+        val userEmail = trustedEmailOf(user)
         if (userEmail == null) {
             _isAdmin.value = false
             return false
@@ -99,27 +121,31 @@ object AdminManager {
     }
 
     private fun evaluateAdminStatus(user: FirebaseUser?) {
-        val email = user?.email?.trim()
+        val email = trustedEmailOf(user)
         val isEmailMatch = email != null && (
-            email.equals(cachedAdminEmail, ignoreCase = true) || 
+            email.equals(cachedAdminEmail, ignoreCase = true) ||
             email.equals(SUPER_ADMIN_EMAIL, ignoreCase = true)
         )
-        val isSimulation = sharedPreferences?.getBoolean(KEY_ADMIN_SIMULATION, false) ?: false
-        _isAdmin.value = isEmailMatch || isSimulation
+        _isAdmin.value = isEmailMatch || isSimulationActive()
     }
 
     /**
      * Enables admin simulation mode for testing or demonstration when Google Play services
-     * login is not available on an emulator.
+     * login is not available on an emulator. DEBUG builds only.
      */
     fun toggleAdminSimulation(enable: Boolean) {
+        if (!BuildConfig.DEBUG) {
+            sharedPreferences?.edit()?.remove(KEY_ADMIN_SIMULATION)?.apply()
+            evaluateAdminStatus(FirebaseAuth.getInstance().currentUser)
+            return
+        }
         sharedPreferences?.edit()?.putBoolean(KEY_ADMIN_SIMULATION, enable)?.apply()
         _isAdmin.value = enable
     }
 
     fun isUserAdmin(user: FirebaseUser? = FirebaseAuth.getInstance().currentUser): Boolean {
         if (_isAdmin.value) return true
-        val email = user?.email?.trim() ?: return false
+        val email = trustedEmailOf(user) ?: return false
         return email.equals(cachedAdminEmail, ignoreCase = true) || email.equals(SUPER_ADMIN_EMAIL, ignoreCase = true)
     }
 
@@ -192,6 +218,7 @@ object AdminManager {
      * Bans a user account or phone number.
      */
     fun banAccount(identifier: String, reason: String) {
+        if (!isUserAdmin()) return
         val clean = identifier.trim()
         if (clean.isBlank()) return
         val newEntry = BannedAccount(
@@ -206,6 +233,7 @@ object AdminManager {
      * Unbans an account or phone number.
      */
     fun unbanAccount(id: String) {
+        if (!isUserAdmin()) return
         _bannedAccounts.value = _bannedAccounts.value.filter { it.id != id }
         saveBannedAccounts()
     }
@@ -220,6 +248,8 @@ object AdminManager {
         context: Context,
         repository: PhoneTrackerRepository
     ) {
+        if (!isUserAdmin()) return
+
         val formattedTitle = "👑 تعميم المشرف العام: $title"
         val formattedMessage = "$message\n\n— المهندس هاشم القديمي (المشرف العام)"
 
