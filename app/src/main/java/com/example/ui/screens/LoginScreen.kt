@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -67,6 +68,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -102,6 +104,8 @@ import com.example.ui.theme.PureWhite
 import com.example.ui.theme.SuccessGreen
 import com.example.ui.theme.YemenGold
 import com.example.util.IntentHelper
+import com.google.firebase.auth.PhoneAuthProvider
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class AuthTab {
@@ -136,9 +140,72 @@ fun LoginScreen(
     var passwordInput by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
 
+    var isRegisterMode by remember { mutableStateOf(false) }
+    var isEmailLoading by remember { mutableStateOf(false) }
+
     var phoneInput by remember { mutableStateOf("") }
     var otpInput by remember { mutableStateOf("") }
     var isOtpSent by remember { mutableStateOf(false) }
+    var isPhoneLoading by remember { mutableStateOf(false) }
+    var verificationId by remember { mutableStateOf<String?>(null) }
+    var resendToken by remember { mutableStateOf<PhoneAuthProvider.ForceResendingToken?>(null) }
+    var resendSeconds by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(resendSeconds) {
+        if (resendSeconds > 0) {
+            delay(1000)
+            resendSeconds -= 1
+        }
+    }
+
+    // Shared post-login step: refresh admin state then enter the app
+    val onAuthenticated: (String) -> Unit = { welcome ->
+        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        coroutineScope.launch {
+            val isAdmin = com.example.util.AdminManager.verifyAndSetAdminState(
+                user = user,
+                firestoreService = com.example.data.remote.FirestorePhoneService(context)
+            )
+            Toast.makeText(
+                context,
+                if (isAdmin) "👑 مرحباً بك يا باشمهندس هاشم! تم تفعيل وضع المشرف العام" else welcome,
+                Toast.LENGTH_SHORT
+            ).show()
+            onLoginSuccess()
+        }
+    }
+
+    val sendOtp: () -> Unit = sendOtp@{
+        val e164 = FirebaseAuthManager.normalizeYemeniPhone(phoneInput)
+        val activity = context as? Activity
+        if (e164 == null) {
+            Toast.makeText(context, "يرجى إدخال رقم جوال يمني صحيح (9 أرقام يبدأ بـ 7)", Toast.LENGTH_SHORT).show()
+            return@sendOtp
+        }
+        if (activity == null) return@sendOtp
+        isPhoneLoading = true
+        FirebaseAuthManager.startPhoneVerification(
+            activity = activity,
+            phoneE164 = e164,
+            resendToken = resendToken,
+            onCodeSent = { id, token ->
+                verificationId = id
+                resendToken = token
+                isOtpSent = true
+                isPhoneLoading = false
+                resendSeconds = 60
+                Toast.makeText(context, "تم إرسال رمز التحقق إلى $e164", Toast.LENGTH_SHORT).show()
+            },
+            onAutoVerified = {
+                isPhoneLoading = false
+                onAuthenticated("تم التحقق من رقمك تلقائياً ✅")
+            },
+            onError = { msg ->
+                isPhoneLoading = false
+                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            }
+        )
+    }
 
     var started by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { started = true }
@@ -447,15 +514,75 @@ fun LoginScreen(
                                             onTogglePassword = { isPasswordVisible = !isPasswordVisible }
                                         )
                                         PrimaryAuthButton(
-                                            text = "دخول بالبريد الإلكتروني",
+                                            text = if (isRegisterMode) "إنشاء حساب جديد" else "دخول بالبريد الإلكتروني",
                                             icon = Icons.AutoMirrored.Filled.Login,
-                                            tag = "email_submit_button"
+                                            tag = "email_submit_button",
+                                            loading = isEmailLoading
                                         ) {
-                                            if (emailInput.isBlank() || passwordInput.isBlank()) {
-                                                Toast.makeText(context, "يرجى كتابة البريد وكلمة المرور", Toast.LENGTH_SHORT).show()
+                                            val err = FirebaseAuthManager.validateEmailForm(emailInput, passwordInput, isRegisterMode)
+                                            if (err != null) {
+                                                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
                                             } else {
-                                                Toast.makeText(context, "تم تسجيل الدخول بنجاح بحسابك!", Toast.LENGTH_SHORT).show()
-                                                onLoginSuccess()
+                                                isEmailLoading = true
+                                                coroutineScope.launch {
+                                                    val result = if (isRegisterMode) {
+                                                        FirebaseAuthManager.registerWithEmail(emailInput, passwordInput)
+                                                    } else {
+                                                        FirebaseAuthManager.signInWithEmail(emailInput, passwordInput)
+                                                    }
+                                                    isEmailLoading = false
+                                                    result.onSuccess {
+                                                        onAuthenticated(
+                                                            if (isRegisterMode) "تم إنشاء حسابك ✅ أرسلنا رابط التفعيل إلى بريدك"
+                                                            else "مرحباً بعودتك إلى أمان فون!"
+                                                        )
+                                                    }.onFailure { e ->
+                                                        Toast.makeText(context, e.message ?: "تعذر تسجيل الدخول", Toast.LENGTH_LONG).show()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = if (isRegisterMode) "لديك حساب؟ تسجيل الدخول" else "ليس لديك حساب؟ إنشاء حساب",
+                                                color = YemenGold,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clickable { isRegisterMode = !isRegisterMode }
+                                                    .padding(4.dp)
+                                                    .testTag("email_toggle_register")
+                                            )
+                                            if (!isRegisterMode) {
+                                                Text(
+                                                    text = "نسيت كلمة المرور؟",
+                                                    color = PureWhite.copy(alpha = 0.65f),
+                                                    fontSize = 11.5.sp,
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .clickable {
+                                                            if (emailInput.isBlank()) {
+                                                                Toast.makeText(context, "اكتب بريدك أولاً ثم اضغط نسيت كلمة المرور", Toast.LENGTH_SHORT).show()
+                                                            } else {
+                                                                coroutineScope.launch {
+                                                                    FirebaseAuthManager.sendPasswordReset(emailInput)
+                                                                        .onSuccess {
+                                                                            Toast.makeText(context, "أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك", Toast.LENGTH_LONG).show()
+                                                                        }
+                                                                        .onFailure { e ->
+                                                                            Toast.makeText(context, e.message ?: "تعذر الإرسال", Toast.LENGTH_LONG).show()
+                                                                        }
+                                                                }
+                                                            }
+                                                        }
+                                                        .padding(4.dp)
+                                                        .testTag("email_forgot_password")
+                                                )
                                             }
                                         }
                                     }
@@ -466,7 +593,14 @@ fun LoginScreen(
                                     ) {
                                         LoginField(
                                             value = phoneInput,
-                                            onValueChange = { phoneInput = it },
+                                            onValueChange = {
+                                                phoneInput = it.filter { ch -> ch.isDigit() }.take(12)
+                                                if (isOtpSent) {
+                                                    isOtpSent = false
+                                                    verificationId = null
+                                                    otpInput = ""
+                                                }
+                                            },
                                             label = "رقم الهاتف اليمني (77/73/71/78/70)",
                                             icon = Icons.Default.Phone,
                                             keyboardType = KeyboardType.Phone,
@@ -476,7 +610,7 @@ fun LoginScreen(
                                         if (isOtpSent) {
                                             LoginField(
                                                 value = otpInput,
-                                                onValueChange = { otpInput = it },
+                                                onValueChange = { otpInput = it.filter { ch -> ch.isDigit() }.take(6) },
                                                 label = "رمز التحقق (SMS)",
                                                 icon = Icons.Default.Key,
                                                 keyboardType = KeyboardType.Number,
@@ -486,17 +620,45 @@ fun LoginScreen(
                                         PrimaryAuthButton(
                                             text = if (!isOtpSent) "إرسال رمز التحقق (SMS)" else "تأكيد الدخول برقم الهاتف",
                                             icon = if (!isOtpSent) Icons.AutoMirrored.Filled.Send else Icons.Default.Check,
-                                            tag = "phone_submit_button"
+                                            tag = "phone_submit_button",
+                                            loading = isPhoneLoading
                                         ) {
-                                            if (phoneInput.length < 8) {
-                                                Toast.makeText(context, "يرجى إدخال رقم هاتف يمني صحيح", Toast.LENGTH_SHORT).show()
-                                            } else if (!isOtpSent) {
-                                                isOtpSent = true
-                                                Toast.makeText(context, "تم إرسال رمز التحقق إلى هاتفك", Toast.LENGTH_SHORT).show()
+                                            if (!isOtpSent) {
+                                                sendOtp()
                                             } else {
-                                                Toast.makeText(context, "تم تأكيد رقم الهاتف بنجاح!", Toast.LENGTH_SHORT).show()
-                                                onLoginSuccess()
+                                                val id = verificationId
+                                                if (id == null) {
+                                                    sendOtp()
+                                                } else if (otpInput.trim().length != 6) {
+                                                    Toast.makeText(context, "رمز التحقق مكون من 6 أرقام", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    isPhoneLoading = true
+                                                    coroutineScope.launch {
+                                                        val result = FirebaseAuthManager.verifyPhoneCode(id, otpInput)
+                                                        isPhoneLoading = false
+                                                        result.onSuccess {
+                                                            onAuthenticated("تم تأكيد رقم هاتفك بنجاح ✅")
+                                                        }.onFailure { e ->
+                                                            Toast.makeText(context, e.message ?: "رمز غير صحيح", Toast.LENGTH_LONG).show()
+                                                        }
+                                                    }
+                                                }
                                             }
+                                        }
+                                        if (isOtpSent) {
+                                            Text(
+                                                text = if (resendSeconds > 0) "إعادة الإرسال بعد $resendSeconds ثانية" else "لم يصلك الرمز؟ إعادة الإرسال",
+                                                color = if (resendSeconds > 0) PureWhite.copy(alpha = 0.5f) else YemenGold,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clickable(enabled = resendSeconds == 0 && !isPhoneLoading) { sendOtp() }
+                                                    .padding(4.dp)
+                                                    .testTag("phone_resend_code")
+                                            )
                                         }
                                     }
                                 }
@@ -754,10 +916,11 @@ private fun PrimaryAuthButton(
     text: String,
     icon: ImageVector,
     tag: String,
+    loading: Boolean = false,
     onClick: () -> Unit
 ) {
     Button(
-        onClick = onClick,
+        onClick = { if (!loading) onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -775,10 +938,18 @@ private fun PrimaryAuthButton(
                     RoundedCornerShape(16.dp)
                 )
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = Color(0xFF071A33), modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text, fontWeight = FontWeight.Black, color = Color(0xFF071A33), fontSize = 14.sp)
+            if (loading) {
+                CircularProgressIndicator(
+                    color = Color(0xFF071A33),
+                    modifier = Modifier.size(22.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(icon, contentDescription = null, tint = Color(0xFF071A33), modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text, fontWeight = FontWeight.Black, color = Color(0xFF071A33), fontSize = 14.sp)
+                }
             }
         }
     }
