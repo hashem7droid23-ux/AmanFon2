@@ -1,124 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- أيقونة أمان فون: درع ذهبي وكلمة "أمان" في المنتصف -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <group
-        android:translateX="0"
-        android:translateY="0">
-        
-        <!-- Outer Glowing Shield Shadow / Aura -->
-        <path
-            android:pathData="M54,23 L79,31.5 C79,53 69,72 54,85 C39,72 29,53 29,31.5 Z"
-            android:fillColor="#0D2B4A" />
-
-        <!-- Security Shield Rim (Golden Gradient Border) -->
-        <path
-            android:pathData="M54,25 L77,33 C77,52 68,70 54,82 C40,70 31,52 31,33 Z"
-            android:strokeColor="#FFC107"
-            android:strokeWidth="2.8"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:fillColor="#10253E" />
-
-        <!-- Inner Metallic Shield Contour -->
-        <path
-            android:pathData="M54,28.5 L73.5,35.5 C73.5,50 65.5,65 54,77 C42.5,65 34.5,50 34.5,35.5 Z"
-            android:strokeColor="#FFE082"
-            android:strokeWidth="1.2"
-            android:fillColor="#0B1A2E" />
-
-        <!-- Smartphone Silhouette in Top Section -->
-        <path
-            android:pathData="M46,31 C46,30 47,29 48,29 L60,29 C61,29 62,30 62,31 L62,45 C62,46 61,47 60,47 L48,47 C47,47 46,46 46,45 Z"
-            android:strokeColor="#64B5F6"
-            android:strokeWidth="1.5"
-            android:fillColor="#153250" />
-        
-        <!-- Camera Dot & Home line on phone -->
-        <path
-            android:pathData="M52,31 L56,31"
-            android:strokeColor="#90CAF9"
-            android:strokeWidth="1"
-            android:strokeLineCap="round" />
-        
-        <!-- Green Security Checkmark on Phone Screen -->
-        <path
-            android:pathData="M50.5,38 L53,40.5 L58,35.5"
-            android:strokeColor="#00E676"
-            android:strokeWidth="1.8"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:fillColor="#00000000" />
-
-        <!-- Horizontal Gold Ribbon/Plinth under phone for the text -->
-        <path
-            android:pathData="M37,48.5 L71,48.5"
-            android:strokeColor="#FFB300"
-            android:strokeWidth="1.2"
-            android:strokeLineCap="round" />
-
-        <!-- ============================================== -->
-        <!-- ARABIC TEXT: "أمان" (Aman) IN BOLD CALLIGRAPHY -->
-        <!-- Right to Left: أ (right), م (mid-right), ا (mid-left), ن (left) -->
-        <!-- ============================================== -->
-
-        <!-- 1) Right: Letter Alif with Hamza (أ) -->
-        <!-- Vertical Alif Stem -->
-        <path
-            android:pathData="M68,52 L68,68"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="3.2"
-            android:strokeLineCap="round"
-            android:fillColor="#00000000" />
-        <!-- Hamza above Alif -->
-        <path
-            android:pathData="M65.5,50 C66.5,48.5 69.5,48.5 70.5,50 C70.5,51.5 68.5,52.2 66.5,52.8 L70.5,52.8"
-            android:strokeColor="#FFD54F"
-            android:strokeWidth="1.6"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:fillColor="#00000000" />
-
-        <!-- 2) Mid-Right: Letter Meem (م) -->
-        <!-- Triangular / Oval loop of Meem -->
-        <path
-            android:pathData="M62.5,63.5 C62.5,60 57,60 57,63.5 C57,66.8 62.5,66.8 62.5,63.5 Z"
-            android:fillColor="#FFFFFF" />
-        <!-- Base link connecting to next letter -->
-        <path
-            android:pathData="M62.5,64.5 L53.5,64.5"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="3.2"
-            android:strokeLineCap="round"
-            android:fillColor="#00000000" />
-
-        <!-- 3) Mid-Left: Connected Alif (ـا) -->
-        <path
-            android:pathData="M53.5,64.5 L53.5,52"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="3.2"
-            android:strokeLineCap="round"
-            android:fillColor="#00000000" />
-
-        <!-- 4) Left: Letter Noon (ن) -->
-        <!-- Sweeping crescent bowl of Noon -->
-        <path
-            android:pathData="M50,64.5 L46,64.5 C40,64.5 37,64.5 37,68.5 C37,73 43.5,73 46.5,73 C49.5,73 50.5,71 50.5,68"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="3.0"
-            android:strokeLineCap="round"
-            android:fillColor="#00000000" />
-        <!-- Diamond dot above Noon -->
-        <path
-            android:pathData="M43.5,60.5 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"
-            android:fillColor="#FFD54F" />
-
-        <!-- Small Golden Shield Star at the Bottom Tip -->
-        <path
-            android:pathData="M54,77 L54.7,78.5 L56.3,78.7 L55.1,79.8 L55.4,81.4 L54,80.6 L52.6,81.4 L52.9,79.8 L51.7,78.7 L53.3,78.5 Z"
-            android:fillColor="#FFC107" />
-
-    </group>
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Soft glow -->
+    <path android:pathData="M54,54 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="54" android:gradientRadius="30">
+                <item android:offset="0" android:color="#3300E5FF"/>
+                <item android:offset="1" android:color="#0000E5FF"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Gold shield frame -->
+    <path android:pathData="M54,24 L76,32 L76,52 C76,67.5 66.5,78 54,84.5 C41.5,78 32,67.5 32,52 L32,32 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="32" android:startY="24" android:endX="76" android:endY="84.5">
+                <item android:offset="0" android:color="#FFFFE7A3"/>
+                <item android:offset="0.45" android:color="#FFD4A537"/>
+                <item android:offset="1" android:color="#FF9C6B12"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Inner navy shield -->
+    <path android:pathData="M54,27.4 L73,34.3 L73,52 C73,65.6 64.8,74.9 54,80.9 C43.2,74.9 35,65.6 35,52 L35,34.3 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="54" android:startY="27" android:endX="54" android:endY="81">
+                <item android:offset="0" android:color="#FF123A66"/>
+                <item android:offset="1" android:color="#FF06162B"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Top star -->
+    <path android:fillColor="#FFF2C75C" android:pathData="M54,30.6 L55,32.6 L57.2,32.9 L55.6,34.4 L56,36.6 L54,35.5 L52,36.6 L52.4,34.4 L50.8,32.9 L53,32.6 Z"/>
+    <!-- The word أمان -->
+    <path android:fillType="evenOdd" android:fillColor="#FFFFFFFF" android:pathData="M47.70,51.17 L45.16,52.52 L45.15,57.36 L45.11,57.58 L45.03,57.82 L44.91,58.04 L44.67,58.31 L44.36,58.51 L43.96,58.64 L43.56,58.69 L43.18,58.69 L42.80,58.62 L42.55,58.53 L42.25,58.35 L41.97,58.08 L41.78,57.81 L41.63,57.53 L41.51,57.10 L41.44,56.61 L41.44,56.16 L41.49,55.68 L41.60,55.21 L41.74,54.79 L41.96,54.31 L39.56,54.81 L39.28,55.40 L39.15,55.83 L39.09,56.18 L39.05,56.60 L39.05,57.09 L39.09,57.53 L39.15,57.89 L39.25,58.24 L39.40,58.66 L39.70,59.23 L40.16,59.85 L40.49,60.17 L40.70,60.35 L41.03,60.57 L41.34,60.74 L41.67,60.88 L42.19,61.04 L42.63,61.12 L43.07,61.16 L43.61,61.16 L44.18,61.10 L44.93,60.94 L45.32,60.79 L45.69,60.61 L46.06,60.38 L46.35,60.16 L46.74,59.79 L46.93,59.55 L47.24,59.08 L47.42,58.69 L47.60,58.09 L47.68,57.62 L47.70,57.26ZM42.87,49.12 L42.62,49.20 L42.37,49.34 L42.19,49.51 L42.06,49.69 L41.94,49.97 L41.91,50.19 L41.91,50.53 L41.97,50.84 L42.05,51.02 L42.18,51.21 L42.36,51.39 L42.64,51.56 L42.99,51.65 L43.38,51.65 L43.62,51.60 L43.88,51.48 L44.02,51.38 L44.24,51.13 L44.35,50.94 L44.42,50.68 L44.45,50.48 L44.45,50.26 L44.40,49.95 L44.32,49.74 L44.18,49.52 L44.02,49.36 L43.80,49.22 L43.42,49.11 L43.08,49.09ZM68.33,48.85 L65.78,50.20 L65.78,58.21 L68.33,58.21ZM50.51,49.57 L50.51,55.40 L50.55,55.78 L50.61,56.11 L50.73,56.47 L50.97,56.95 L51.13,57.16 L51.40,57.46 L51.84,57.80 L52.13,57.95 L52.53,58.09 L52.90,58.17 L53.28,58.21 L56.93,58.20 L57.57,58.07 L57.85,57.97 L58.13,57.82 L58.64,58.03 L59.24,58.16 L59.79,58.21 L60.46,58.20 L60.79,58.15 L61.23,58.02 L61.48,57.90 L61.82,57.69 L62.01,57.54 L62.32,57.23 L62.53,56.97 L62.71,56.69 L62.88,56.35 L63.02,55.96 L63.11,55.62 L63.18,55.23 L63.21,54.74 L63.21,54.34 L63.18,53.86 L63.10,53.42 L63.03,53.17 L62.87,52.72 L62.72,52.44 L62.52,52.12 L62.35,51.90 L62.09,51.62 L61.63,51.28 L61.35,51.13 L60.97,50.99 L60.71,50.93 L60.19,50.86 L59.57,50.88 L59.16,50.94 L58.69,51.08 L58.37,51.24 L58.02,51.47 L57.65,51.83 L57.38,52.22 L57.20,52.61 L57.08,52.99 L57.00,53.50 L56.99,55.25 L56.94,55.47 L56.90,55.55 L56.81,55.64 L56.63,55.72 L56.46,55.74 L53.48,55.73 L53.33,55.69 L53.17,55.58 L53.09,55.42 L53.05,55.21 L53.05,48.23ZM59.88,53.25 L60.06,53.25 L60.26,53.30 L60.45,53.45 L60.55,53.59 L60.62,53.73 L60.71,54.17 L60.71,54.74 L60.66,55.07 L60.59,55.28 L60.49,55.47 L60.37,55.60 L60.23,55.69 L60.04,55.74 L59.78,55.73 L59.66,55.68 L59.59,55.60 L59.53,55.43 L59.55,53.60 L59.61,53.42 L59.75,53.29ZM68.41,45.24 L68.24,45.10 L67.94,44.93 L67.75,44.87 L67.50,44.83 L67.18,44.84 L67.00,44.88 L66.70,45.01 L66.57,45.10 L66.38,45.28 L66.24,45.48 L66.15,45.66 L66.08,45.89 L66.08,46.39 L66.13,46.59 L66.25,46.82 L65.73,46.83 L65.14,47.96 L68.33,47.96 L68.94,46.83 L67.30,46.83 L67.20,46.72 L67.11,46.54 L67.09,46.29 L67.14,46.15 L67.27,46.02 L67.46,45.96 L67.70,45.96 L67.93,46.02 L68.11,46.11 L68.41,46.33Z"/>
+    <!-- Gold underline + green secure dot -->
+    <path android:fillColor="#FFD4A537" android:pathData="M46,64.2 L62,64.2 L62,65.6 L46,65.6 Z"/>
+    <path android:fillColor="#FF2EE59D" android:pathData="M54,69.3 m-1.5,0 a1.5,1.5 0 1,0 3,0 a1.5,1.5 0 1,0 -3,0"/>
 </vector>
