@@ -2,7 +2,7 @@ package com.example.ui.screens
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -13,22 +13,25 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -42,38 +45,25 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.ThumbUp
-import androidx.compose.ui.res.painterResource
-import com.example.R
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -83,34 +73,36 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
+import com.example.R
 import com.example.data.remote.FirebaseAuthManager
 import com.example.ui.components.YemenFlagPill
-import com.example.ui.theme.AlertRed
-import com.example.ui.theme.Navy700
-import com.example.ui.theme.Navy800
-import com.example.ui.theme.Navy900
 import com.example.ui.theme.PureWhite
 import com.example.ui.theme.SuccessGreen
-import com.example.ui.theme.SuccessGreenLight
-import com.example.ui.theme.WarningAmber
-import com.example.ui.theme.WarningAmberLight
+import com.example.ui.theme.YemenGold
 import com.example.util.IntentHelper
+import kotlinx.coroutines.launch
 
 enum class AuthTab {
     GOOGLE,
@@ -118,6 +110,15 @@ enum class AuthTab {
     PHONE
 }
 
+private val LoginCyan = Color(0xFF00E5FF)
+private val GlassCard = Color(0xB30B1F38)
+private val FieldBorder = Color(0xFF1E3A5F)
+private const val DEVELOPER_PHONE = "714525890"
+
+/**
+ * Login screen v2: single full-height page (no scrolling needed on normal phones),
+ * matching the new shield icon and the motion splash.
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -131,512 +132,362 @@ fun LoginScreen(
     var selectedTab by remember { mutableStateOf(AuthTab.GOOGLE) }
     var isAuthenticating by remember { mutableStateOf(false) }
 
-    // Email tab fields
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
 
-    // Phone tab fields
     var phoneInput by remember { mutableStateOf("") }
     var otpInput by remember { mutableStateOf("") }
     var isOtpSent by remember { mutableStateOf(false) }
 
-    // Slow-motion animation states
-    var startAnimation by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        startAnimation = true
+    var started by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { started = true }
+
+    val headerP by animateFloatAsState(
+        targetValue = if (started) 1f else 0f,
+        animationSpec = tween(900, easing = FastOutSlowInEasing),
+        label = "HeaderP"
+    )
+    val cardP by animateFloatAsState(
+        targetValue = if (started) 1f else 0f,
+        animationSpec = tween(900, delayMillis = 200, easing = FastOutSlowInEasing),
+        label = "CardP"
+    )
+    val footerP by animateFloatAsState(
+        targetValue = if (started) 1f else 0f,
+        animationSpec = tween(900, delayMillis = 400, easing = FastOutSlowInEasing),
+        label = "FooterP"
+    )
+
+    val infinite = rememberInfiniteTransition(label = "LoginLoop")
+    val orbit by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(10000, easing = LinearEasing)),
+        label = "Orbit"
+    )
+    val glow by infinite.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "Glow"
+    )
+
+    val googleSignIn: () -> Unit = {
+        isAuthenticating = true
+        FirebaseAuthManager.onGoogleSignInClicked(
+            context = context,
+            credentialManager = credentialManager,
+            onAuthSuccess = {
+                isAuthenticating = false
+                val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                coroutineScope.launch {
+                    val isMatch = com.example.util.AdminManager.verifyAndSetAdminState(
+                        user = user,
+                        firestoreService = com.example.data.remote.FirestorePhoneService(context)
+                    )
+                    if (isMatch) {
+                        Toast.makeText(context, "👑 مرحباً بك يا باشمهندس هاشم! تم تفعيل وضع المشرف العام", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, "مرحباً بك في أمان فون!", Toast.LENGTH_SHORT).show()
+                    }
+                    onLoginSuccess()
+                }
+            },
+            onAuthError = { err ->
+                isAuthenticating = false
+                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+            },
+            scope = coroutineScope,
+            onAuthCancelled = { isAuthenticating = false }
+        )
     }
-
-    // Slow pulsing aura for security shield
-    val infiniteTransition = rememberInfiniteTransition(label = "RadarAura")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "PulseScale"
-    )
-
-    val auraAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.25f,
-        targetValue = 0.65f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "AuraAlpha"
-    )
-
-    // Staggered entrance animations
-    val headerAlpha by animateFloatAsState(
-        targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 900, easing = FastOutSlowInEasing),
-        label = "HeaderAlpha"
-    )
-    val contentAlpha by animateFloatAsState(
-        targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 1200, delayMillis = 250, easing = FastOutSlowInEasing),
-        label = "ContentAlpha"
-    )
-    val footerAlpha by animateFloatAsState(
-        targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 1200, delayMillis = 500, easing = FastOutSlowInEasing),
-        label = "FooterAlpha"
-    )
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = Navy900
+        containerColor = Color(0xFF030A16)
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // 1. Slow-Motion Header with Animated Security Shield Emblem
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .alpha(headerAlpha),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(110.dp)
-                ) {
-                    // Outer glowing pulsing ring
-                    Box(
-                        modifier = Modifier
-                            .size(110.dp)
-                            .scale(pulseScale)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(
-                                        WarningAmber.copy(alpha = auraAlpha),
-                                        Navy700.copy(alpha = 0.1f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF020611), Color(0xFF071A33), Color(0xFF0A2140), Color(0xFF030A16))
                     )
-
-                    // Middle navy badge
-                    Box(
-                        modifier = Modifier
-                            .size(76.dp)
-                            .clip(CircleShape)
-                            .background(Navy800)
-                            .border(2.dp, WarningAmber, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Shield,
-                            contentDescription = "شعار أمان فون",
-                            tint = WarningAmber,
-                            modifier = Modifier.size(42.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "أمان فون",
-                        color = PureWhite,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    YemenFlagPill()
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = "Aman Phone • المنظومة الوطنية لتتبع وحماية الهواتف",
-                    color = WarningAmber,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "فحص فوري لأرقام IMEI • بلاغات عاجلة لجميع المحلات • حماية مجتمعية متكاملة في اليمن",
-                    color = PureWhite.copy(alpha = 0.8f),
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 17.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            // Ambient aurora
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val c = Offset(size.width / 2f, size.height * 0.16f)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        listOf(LoginCyan.copy(alpha = 0.14f * glow), Color(0xFF0D47A1).copy(alpha = 0.06f), Color.Transparent),
+                        center = c,
+                        radius = size.width * 0.8f
+                    ),
+                    center = c,
+                    radius = size.width * 0.8f
+                )
+                val g = Offset(size.width * 0.1f, size.height)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        listOf(YemenGold.copy(alpha = 0.08f), Color.Transparent),
+                        center = g,
+                        radius = size.width * 0.7f
+                    ),
+                    center = g,
+                    radius = size.width * 0.7f
                 )
             }
 
-            // 2. Interactive Sign-In Container Card
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Navy800),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                border = BorderStroke(1.dp, Navy700),
+            BoxWithConstraints(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .alpha(contentAlpha)
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .imePadding()
             ) {
+                val compact = maxHeight < 700.dp
+                val emblemBox: Dp = if (compact) 92.dp else 116.dp
+                val minHeight = maxHeight
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp),
+                        .verticalScroll(rememberScrollState())
+                        .heightIn(min = minHeight)
+                        .padding(horizontal = 20.dp, vertical = if (compact) 10.dp else 18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "تسجيل الدخول إلى حسابك",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PureWhite
-                    )
-
-                    // Navigation Tabs with Icons: Google / Email / Phone
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    // ---------- 1. Brand header ----------
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.graphicsLayer {
+                            alpha = headerP
+                            translationY = (1f - headerP) * -40f
+                        }
                     ) {
-                        FilterChip(
-                            selected = selectedTab == AuthTab.GOOGLE,
-                            onClick = { selectedTab = AuthTab.GOOGLE },
-                            leadingIcon = {
-                                androidx.compose.foundation.Image(
-                                    painter = painterResource(id = R.drawable.ic_google_logo),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(emblemBox)) {
+                            Canvas(
+                                modifier = Modifier
+                                    .size(emblemBox)
+                                    .rotate(orbit)
+                            ) {
+                                val s = 2.dp.toPx()
+                                val arc = Size(size.width - s * 2, size.height - s * 2)
+                                drawArc(
+                                    color = YemenGold,
+                                    startAngle = 0f,
+                                    sweepAngle = 100f,
+                                    useCenter = false,
+                                    topLeft = Offset(s, s),
+                                    size = arc,
+                                    style = Stroke(width = s, cap = StrokeCap.Round)
                                 )
-                            },
-                            label = { Text("Google", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = WarningAmber,
-                                selectedLabelColor = Navy900,
-                                containerColor = Navy700.copy(alpha = 0.6f),
-                                labelColor = PureWhite
-                            ),
-                            modifier = Modifier.weight(1f).testTag("tab_auth_google")
+                                drawArc(
+                                    color = LoginCyan.copy(alpha = 0.8f),
+                                    startAngle = 180f,
+                                    sweepAngle = 60f,
+                                    useCenter = false,
+                                    topLeft = Offset(s, s),
+                                    size = arc,
+                                    style = Stroke(width = s, cap = StrokeCap.Round)
+                                )
+                            }
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                                contentDescription = "شعار أمان فون",
+                                modifier = Modifier.requiredSize(emblemBox * 1.55f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("أمان", color = PureWhite, fontSize = if (compact) 26.sp else 30.sp, fontWeight = FontWeight.Black)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("فون", color = YemenGold, fontSize = if (compact) 26.sp else 30.sp, fontWeight = FontWeight.Black)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            YemenFlagPill()
+                        }
+
+                        Text(
+                            text = "Aman Phone • المنظومة الوطنية لتتبع وحماية الهواتف",
+                            color = YemenGold,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                        FilterChip(
-                            selected = selectedTab == AuthTab.EMAIL,
-                            onClick = { selectedTab = AuthTab.EMAIL },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = if (selectedTab == AuthTab.EMAIL) Navy900 else WarningAmber
-                                )
-                            },
-                            label = { Text("البريد", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = WarningAmber,
-                                selectedLabelColor = Navy900,
-                                containerColor = Navy700.copy(alpha = 0.6f),
-                                labelColor = PureWhite
-                            ),
-                            modifier = Modifier.weight(1f).testTag("tab_auth_email")
-                        )
-                        FilterChip(
-                            selected = selectedTab == AuthTab.PHONE,
-                            onClick = { selectedTab = AuthTab.PHONE },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Phone,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = if (selectedTab == AuthTab.PHONE) Navy900 else WarningAmber
-                                )
-                            },
-                            label = { Text("الهاتف", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = WarningAmber,
-                                selectedLabelColor = Navy900,
-                                containerColor = Navy700.copy(alpha = 0.6f),
-                                labelColor = PureWhite
-                            ),
-                            modifier = Modifier.weight(1f).testTag("tab_auth_phone")
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "فحص فوري لأرقام IMEI • بلاغات عاجلة لجميع المحلات • حماية مجتمعية متكاملة في اليمن",
+                            color = PureWhite.copy(alpha = 0.7f),
+                            fontSize = 10.5.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 15.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp)
                         )
                     }
 
-                    // Content of each selected tab with smooth transitions
-                    AnimatedContent(
-                        targetState = selectedTab,
-                        transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(300)) },
-                        label = "AuthTabTransition"
-                    ) { tab ->
-                        when (tab) {
-                            // 1. Google Tab
-                            AuthTab.GOOGLE -> {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                                ) {
-                                    Text(
-                                        text = "المصادقة الآمنة السريعة عبر حساب Google المعتمد لمزامنة بلاغاتك وتنبيهاتك سحابياً في اليمن.",
-                                        fontSize = 12.sp,
-                                        color = PureWhite.copy(alpha = 0.85f),
-                                        textAlign = TextAlign.Center,
-                                        lineHeight = 18.sp
-                                    )
-
-                                    Button(
-                                        onClick = {
-                                            isAuthenticating = true
-                                            FirebaseAuthManager.onGoogleSignInClicked(
-                                                context = context,
-                                                credentialManager = credentialManager,
-                                                onAuthSuccess = {
-                                                    isAuthenticating = false
-                                                    val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                                                    coroutineScope.launch {
-                                                        val isMatch = com.example.util.AdminManager.verifyAndSetAdminState(
-                                                            user = user,
-                                                            firestoreService = com.example.data.remote.FirestorePhoneService(context)
-                                                        )
-                                                        if (isMatch) {
-                                                            Toast.makeText(context, "👑 مرحباً بك يا باشمهندس هاشم! تم تفعيل وضع المشرف العام عبر Firestore", Toast.LENGTH_LONG).show()
-                                                        } else {
-                                                            Toast.makeText(context, "مرحباً بك في أمان فون!", Toast.LENGTH_SHORT).show()
-                                                        }
-                                                        onLoginSuccess()
-                                                    }
-                                                },
-                                                onAuthError = { err ->
-                                                    isAuthenticating = false
-                                                    Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
-                                                },
-                                                scope = coroutineScope,
-                                                onAuthCancelled = { isAuthenticating = false }
-                                            )
-                                        },
-                                        enabled = !isAuthenticating,
-                                        shape = RoundedCornerShape(14.dp),
-                                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 6.dp),
-                                        border = BorderStroke(1.dp, Color(0xFFDADCE0)),
-                                        colors = ButtonDefaults.buttonColors(containerColor = PureWhite),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(52.dp)
-                                            .testTag("google_login_primary_button")
-                                    ) {
-                                        if (isAuthenticating) {
-                                            CircularProgressIndicator(
-                                                color = Navy900,
-                                                modifier = Modifier.size(22.dp),
-                                                strokeWidth = 2.dp
-                                            )
-                                        } else {
-                                            androidx.compose.foundation.Image(
-                                                painter = painterResource(id = R.drawable.ic_google_logo),
-                                                contentDescription = "Google Logo",
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Text(
-                                                text = "تسجيل الدخول السريع عبر Google",
-                                                color = Color(0xFF1F1F1F),
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp
-                                            )
-                                        }
-                                    }
-
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = Navy900.copy(alpha = 0.8f),
-                                        border = BorderStroke(1.dp, WarningAmber.copy(alpha = 0.5f)),
-                                        modifier = Modifier.fillMaxWidth().testTag("supervisor_account_card")
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Text("👑", fontSize = 16.sp)
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Column {
-                                                    Text(
-                                                        text = "حساب المشرف العام المعتمد للمنظومة:",
-                                                        fontSize = 10.sp,
-                                                        color = PureWhite.copy(alpha = 0.8f)
-                                                    )
-                                                    Text(
-                                                        text = com.example.util.AdminManager.SUPER_ADMIN_EMAIL,
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = WarningAmber
-                                                    )
-                                                }
-                                            }
-
-                                            // Quick button for Hashem to activate supervisor mode if on test emulator
-                                            TextButton(
-                                                onClick = {
-                                                    com.example.util.AdminManager.toggleAdminSimulation(true)
-                                                    Toast.makeText(context, "👑 تم تفعيل وضع المشرف العام للمهندس هاشم القديمي!", Toast.LENGTH_SHORT).show()
-                                                    onLoginSuccess()
-                                                }
-                                            ) {
-                                                Text("دخول كمشرف ⚡", fontSize = 10.sp, color = SuccessGreen, fontWeight = FontWeight.Bold)
-                                            }
-                                        }
-                                    }
-                                }
+                    // ---------- 2. Sign-in card ----------
+                    Surface(
+                        shape = RoundedCornerShape(26.dp),
+                        color = GlassCard,
+                        border = BorderStroke(
+                            1.dp,
+                            Brush.linearGradient(
+                                listOf(YemenGold.copy(alpha = 0.55f), LoginCyan.copy(alpha = 0.35f * glow), Color(0xFF1E3A5F))
+                            )
+                        ),
+                        shadowElevation = 12.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp)
+                            .graphicsLayer {
+                                alpha = cardP
+                                translationY = (1f - cardP) * 60f
+                            }
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "مرحباً بك 👋",
+                                    fontSize = 19.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = PureWhite
+                                )
+                                Text(
+                                    text = "تسجيل الدخول إلى حسابك",
+                                    fontSize = 12.sp,
+                                    color = PureWhite.copy(alpha = 0.65f)
+                                )
                             }
 
-                            // 2. Email & Password Tab
-                            AuthTab.EMAIL -> {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = emailInput,
-                                        onValueChange = { emailInput = it },
-                                        label = { Text("البريد الإلكتروني", color = PureWhite.copy(alpha = 0.8f)) },
-                                        placeholder = { Text("example@gmail.com") },
-                                        leadingIcon = {
-                                            Icon(Icons.Default.Email, contentDescription = null, tint = WarningAmber)
-                                        },
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = WarningAmber,
-                                            unfocusedBorderColor = Navy700,
-                                            focusedTextColor = PureWhite,
-                                            unfocusedTextColor = PureWhite
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth().testTag("email_input_field")
-                                    )
+                            AuthSegmented(selected = selectedTab, onSelect = { selectedTab = it })
 
-                                    OutlinedTextField(
-                                        value = passwordInput,
-                                        onValueChange = { passwordInput = it },
-                                        label = { Text("كلمة المرور", color = PureWhite.copy(alpha = 0.8f)) },
-                                        leadingIcon = {
-                                            Icon(Icons.Default.Lock, contentDescription = null, tint = WarningAmber)
-                                        },
-                                        trailingIcon = {
-                                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                                Icon(
-                                                    imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                                    contentDescription = null,
-                                                    tint = PureWhite.copy(alpha = 0.7f)
+                            AnimatedContent(
+                                targetState = selectedTab,
+                                transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
+                                label = "AuthTab"
+                            ) { tab ->
+                                when (tab) {
+                                    AuthTab.GOOGLE -> Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Text(
+                                            text = "المصادقة الآمنة السريعة عبر حساب Google المعتمد لمزامنة بلاغاتك وتنبيهاتك سحابياً في اليمن.",
+                                            fontSize = 11.5.sp,
+                                            color = PureWhite.copy(alpha = 0.8f),
+                                            textAlign = TextAlign.Center,
+                                            lineHeight = 17.sp
+                                        )
+                                        Button(
+                                            onClick = googleSignIn,
+                                            enabled = !isAuthenticating,
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = PureWhite,
+                                                disabledContainerColor = PureWhite.copy(alpha = 0.8f)
+                                            ),
+                                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(54.dp)
+                                                .testTag("google_login_primary_button")
+                                        ) {
+                                            if (isAuthenticating) {
+                                                CircularProgressIndicator(
+                                                    color = Color(0xFF071A33),
+                                                    modifier = Modifier.size(22.dp),
+                                                    strokeWidth = 2.dp
+                                                )
+                                            } else {
+                                                Image(
+                                                    painter = painterResource(id = R.drawable.ic_google_logo),
+                                                    contentDescription = "Google",
+                                                    modifier = Modifier.size(22.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                Text(
+                                                    text = "المتابعة باستخدام Google",
+                                                    color = Color(0xFF1F1F1F),
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp
                                                 )
                                             }
-                                        },
-                                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                                        singleLine = true,
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = WarningAmber,
-                                            unfocusedBorderColor = Navy700,
-                                            focusedTextColor = PureWhite,
-                                            unfocusedTextColor = PureWhite
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth().testTag("password_input_field")
-                                    )
+                                        }
+                                    }
 
-                                    Button(
-                                        onClick = {
+                                    AuthTab.EMAIL -> Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        LoginField(
+                                            value = emailInput,
+                                            onValueChange = { emailInput = it },
+                                            label = "البريد الإلكتروني",
+                                            icon = Icons.Default.Email,
+                                            keyboardType = KeyboardType.Email,
+                                            tag = "email_input_field"
+                                        )
+                                        LoginField(
+                                            value = passwordInput,
+                                            onValueChange = { passwordInput = it },
+                                            label = "كلمة المرور",
+                                            icon = Icons.Default.Lock,
+                                            keyboardType = KeyboardType.Password,
+                                            tag = "password_input_field",
+                                            isPassword = true,
+                                            passwordVisible = isPasswordVisible,
+                                            onTogglePassword = { isPasswordVisible = !isPasswordVisible }
+                                        )
+                                        PrimaryAuthButton(
+                                            text = "دخول بالبريد الإلكتروني",
+                                            icon = Icons.AutoMirrored.Filled.Login,
+                                            tag = "email_submit_button"
+                                        ) {
                                             if (emailInput.isBlank() || passwordInput.isBlank()) {
                                                 Toast.makeText(context, "يرجى كتابة البريد وكلمة المرور", Toast.LENGTH_SHORT).show()
                                             } else {
                                                 Toast.makeText(context, "تم تسجيل الدخول بنجاح بحسابك!", Toast.LENGTH_SHORT).show()
                                                 onLoginSuccess()
                                             }
-                                        },
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(50.dp)
-                                            .testTag("email_submit_button")
+                                        }
+                                    }
+
+                                    AuthTab.PHONE -> Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.Login,
-                                            contentDescription = null,
-                                            tint = Navy900,
-                                            modifier = Modifier.size(18.dp)
+                                        LoginField(
+                                            value = phoneInput,
+                                            onValueChange = { phoneInput = it },
+                                            label = "رقم الهاتف اليمني (77/73/71/78/70)",
+                                            icon = Icons.Default.Phone,
+                                            keyboardType = KeyboardType.Phone,
+                                            tag = "phone_input_field",
+                                            prefix = "+967  "
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("دخول بالبريد الإلكتروني", fontWeight = FontWeight.Bold, color = Navy900)
-                                    }
-                                }
-                            }
-
-                            // 3. Phone Number Tab
-                            AuthTab.PHONE -> {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = phoneInput,
-                                        onValueChange = { phoneInput = it },
-                                        label = { Text("رقم الهاتف اليمني (77/73/71/78/70)", color = PureWhite.copy(alpha = 0.8f)) },
-                                        placeholder = { Text("77xxxxxxx") },
-                                        prefix = { Text("+967  ", color = WarningAmber, fontWeight = FontWeight.Bold) },
-                                        leadingIcon = {
-                                            Icon(Icons.Default.Phone, contentDescription = null, tint = WarningAmber)
-                                        },
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = WarningAmber,
-                                            unfocusedBorderColor = Navy700,
-                                            focusedTextColor = PureWhite,
-                                            unfocusedTextColor = PureWhite
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth().testTag("phone_input_field")
-                                    )
-
-                                    if (isOtpSent) {
-                                        OutlinedTextField(
-                                            value = otpInput,
-                                            onValueChange = { otpInput = it },
-                                            label = { Text("رمز التحقق (SMS)", color = PureWhite.copy(alpha = 0.8f)) },
-                                            placeholder = { Text("أدخل رمز 4 أو 6 أرقام") },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.Key, contentDescription = null, tint = SuccessGreen)
-                                            },
-                                            singleLine = true,
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = SuccessGreen,
-                                                unfocusedBorderColor = Navy700,
-                                                focusedTextColor = PureWhite,
-                                                unfocusedTextColor = PureWhite
-                                            ),
-                                            shape = RoundedCornerShape(12.dp),
-                                            modifier = Modifier.fillMaxWidth().testTag("otp_input_field")
-                                        )
-                                    }
-
-                                    Button(
-                                        onClick = {
+                                        if (isOtpSent) {
+                                            LoginField(
+                                                value = otpInput,
+                                                onValueChange = { otpInput = it },
+                                                label = "رمز التحقق (SMS)",
+                                                icon = Icons.Default.Key,
+                                                keyboardType = KeyboardType.Number,
+                                                tag = "otp_input_field"
+                                            )
+                                        }
+                                        PrimaryAuthButton(
+                                            text = if (!isOtpSent) "إرسال رمز التحقق (SMS)" else "تأكيد الدخول برقم الهاتف",
+                                            icon = if (!isOtpSent) Icons.AutoMirrored.Filled.Send else Icons.Default.Check,
+                                            tag = "phone_submit_button"
+                                        ) {
                                             if (phoneInput.length < 8) {
                                                 Toast.makeText(context, "يرجى إدخال رقم هاتف يمني صحيح", Toast.LENGTH_SHORT).show()
                                             } else if (!isOtpSent) {
@@ -646,196 +497,327 @@ fun LoginScreen(
                                                 Toast.makeText(context, "تم تأكيد رقم الهاتف بنجاح!", Toast.LENGTH_SHORT).show()
                                                 onLoginSuccess()
                                             }
-                                        },
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(50.dp)
-                                            .testTag("phone_submit_button")
-                                    ) {
-                                        Icon(
-                                            imageVector = if (!isOtpSent) Icons.AutoMirrored.Filled.Send else Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = PureWhite,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = if (!isOtpSent) "إرسال رمز التحقق (SMS)" else "تأكيد الدخول برقم الهاتف",
-                                            fontWeight = FontWeight.Bold,
-                                            color = PureWhite
-                                        )
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    // Guest / Skip Mode as a sleek stylish card button
-                    OutlinedButton(
-                        onClick = onSkipGuest,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.2.dp, WarningAmber.copy(alpha = 0.7f)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = WarningAmber),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp)
-                            .testTag("skip_guest_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Explore,
-                            contentDescription = null,
-                            tint = WarningAmber,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "تصفح أمان فون كزائر لتفقد البلاغات وفحص IMEI ←",
-                            color = WarningAmber,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            // 3. Developer & Designer Rights Section (حقوق برمجة وتصميم التطبيق)
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Navy800.copy(alpha = 0.9f)),
-                border = BorderStroke(1.2.dp, WarningAmber.copy(alpha = 0.6f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .alpha(footerAlpha)
-                    .testTag("developer_credits_card")
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(CircleShape)
-                                .background(WarningAmber.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = WarningAmber,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "حقوق البرمجة والتصميم",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = WarningAmber
-                        )
-                    }
-
-                    Text(
-                        text = "تم تطوير وبرمجة وتصميم التطبيق بواسطة:",
-                        fontSize = 11.sp,
-                        color = PureWhite.copy(alpha = 0.75f)
-                    )
-
-                    Text(
-                        text = "المهندس: هاشم القديمي",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = PureWhite
-                    )
-
-                    Text(
-                        text = "مطور برمجيات وأنظمة أمان الهواتف • الجمهورية اليمنية",
-                        fontSize = 11.sp,
-                        color = WarningAmber.copy(alpha = 0.9f)
-                    )
-
-                    // Contact Buttons Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Facebook Button
-                        Button(
-                            onClick = {
-                                IntentHelper.openFacebookProfile(context, "HashemAlQodimy")
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2)),
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
-                            modifier = Modifier.weight(1.3f).testTag("developer_facebook_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.ThumbUp,
-                                contentDescription = "فيسبوك",
-                                tint = PureWhite,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Column {
-                                Text("فيسبوك", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PureWhite)
-                                Text("HashemAlQodimy", fontSize = 8.sp, color = PureWhite.copy(alpha = 0.9f))
+                            // Guest mode
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onSkipGuest() }
+                                    .padding(vertical = 6.dp)
+                                    .testTag("skip_guest_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Explore,
+                                    contentDescription = null,
+                                    tint = YemenGold,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "تصفح كزائر لتفقد البلاغات وفحص IMEI ←",
+                                    color = YemenGold,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
+                    }
 
-                        // WhatsApp Button
-                        Button(
-                            onClick = {
-                                IntentHelper.contactDeveloperWhatsApp(context, "777450123")
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
-                            modifier = Modifier.weight(1f).testTag("developer_whatsapp_button")
-                        ) {
+                    // ---------- 3. Developer credits (compact) ----------
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer { alpha = footerP }
+                            .testTag("developer_credits_card")
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .width(28.dp)
+                                    .height(1.dp)
+                                    .background(Brush.horizontalGradient(listOf(Color.Transparent, YemenGold)))
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Chat,
-                                contentDescription = "واتساب",
-                                tint = PureWhite,
-                                modifier = Modifier.size(16.dp)
+                                imageVector = Icons.Default.Verified,
+                                contentDescription = null,
+                                tint = YemenGold,
+                                modifier = Modifier.size(13.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("واتساب", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                            Text(
+                                text = "حقوق البرمجة والتصميم",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = YemenGold
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .width(28.dp)
+                                    .height(1.dp)
+                                    .background(Brush.horizontalGradient(listOf(YemenGold, Color.Transparent)))
+                            )
                         }
-
-                        // Direct Call Button
-                        Button(
-                            onClick = {
-                                IntentHelper.makeCall(context, "777450123")
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Navy700),
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
-                            modifier = Modifier.weight(0.9f).testTag("developer_call_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Call,
-                                contentDescription = "اتصال",
-                                tint = PureWhite,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("اتصال", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "المهندس: هاشم القديمي",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Black,
+                            color = PureWhite
+                        )
+                        Text(
+                            text = "مطور برمجيات وأنظمة أمان الهواتف • الجمهورية اليمنية",
+                            fontSize = 10.5.sp,
+                            color = PureWhite.copy(alpha = 0.6f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            ContactBubble(
+                                icon = Icons.Outlined.ThumbUp,
+                                label = "فيسبوك",
+                                color = Color(0xFF1877F2),
+                                tag = "developer_facebook_button"
+                            ) { IntentHelper.openFacebookProfile(context, "HashemAlQodimy") }
+                            ContactBubble(
+                                icon = Icons.AutoMirrored.Outlined.Chat,
+                                label = "واتساب",
+                                color = SuccessGreen,
+                                tag = "developer_whatsapp_button"
+                            ) { IntentHelper.contactDeveloperWhatsApp(context, DEVELOPER_PHONE) }
+                            ContactBubble(
+                                icon = Icons.Default.Call,
+                                label = "اتصال",
+                                color = Color(0xFF1E88E5),
+                                tag = "developer_call_button"
+                            ) { IntentHelper.makeCall(context, DEVELOPER_PHONE) }
                         }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
         }
+    }
+}
+
+@Composable
+private fun AuthSegmented(selected: AuthTab, onSelect: (AuthTab) -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF061424),
+        border = BorderStroke(1.dp, FieldBorder),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(modifier = Modifier.padding(4.dp)) {
+            SegmentItem(
+                label = "Google",
+                selected = selected == AuthTab.GOOGLE,
+                tag = "tab_auth_google",
+                leading = {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_google_logo),
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
+                    )
+                },
+                modifier = Modifier.weight(1f)
+            ) { onSelect(AuthTab.GOOGLE) }
+            SegmentItem(
+                label = "البريد",
+                selected = selected == AuthTab.EMAIL,
+                tag = "tab_auth_email",
+                leading = {
+                    Icon(
+                        Icons.Default.Email,
+                        contentDescription = null,
+                        tint = if (selected == AuthTab.EMAIL) Color(0xFF071A33) else YemenGold,
+                        modifier = Modifier.size(14.dp)
+                    )
+                },
+                modifier = Modifier.weight(1f)
+            ) { onSelect(AuthTab.EMAIL) }
+            SegmentItem(
+                label = "الهاتف",
+                selected = selected == AuthTab.PHONE,
+                tag = "tab_auth_phone",
+                leading = {
+                    Icon(
+                        Icons.Default.Phone,
+                        contentDescription = null,
+                        tint = if (selected == AuthTab.PHONE) Color(0xFF071A33) else YemenGold,
+                        modifier = Modifier.size(14.dp)
+                    )
+                },
+                modifier = Modifier.weight(1f)
+            ) { onSelect(AuthTab.PHONE) }
+        }
+    }
+}
+
+@Composable
+private fun SegmentItem(
+    label: String,
+    selected: Boolean,
+    tag: String,
+    leading: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val bg by animateColorAsState(
+        targetValue = if (selected) YemenGold else Color.Transparent,
+        animationSpec = tween(250),
+        label = "SegBg"
+    )
+    val fg by animateColorAsState(
+        targetValue = if (selected) Color(0xFF071A33) else PureWhite.copy(alpha = 0.8f),
+        animationSpec = tween(250),
+        label = "SegFg"
+    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(bg)
+            .clickable { onClick() }
+            .padding(vertical = 9.dp)
+            .testTag(tag)
+    ) {
+        leading()
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(text = label, color = fg, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun LoginField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: ImageVector,
+    keyboardType: KeyboardType,
+    tag: String,
+    prefix: String? = null,
+    isPassword: Boolean = false,
+    passwordVisible: Boolean = false,
+    onTogglePassword: () -> Unit = {}
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label, fontSize = 12.sp) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = YemenGold) },
+        prefix = if (prefix != null) {
+            { Text(prefix, color = YemenGold, fontWeight = FontWeight.Bold) }
+        } else null,
+        trailingIcon = if (isPassword) {
+            {
+                IconButton(onClick = onTogglePassword) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = null,
+                        tint = PureWhite.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        } else null,
+        visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = YemenGold,
+            unfocusedBorderColor = FieldBorder,
+            focusedTextColor = PureWhite,
+            unfocusedTextColor = PureWhite,
+            focusedLabelColor = YemenGold,
+            unfocusedLabelColor = PureWhite.copy(alpha = 0.6f),
+            cursorColor = YemenGold,
+            focusedContainerColor = Color(0xFF061424),
+            unfocusedContainerColor = Color(0xFF061424)
+        ),
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(tag)
+    )
+}
+
+@Composable
+private fun PrimaryAuthButton(
+    text: String,
+    icon: ImageVector,
+    tag: String,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .testTag(tag)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(listOf(Color(0xFFFFE7A3), YemenGold, Color(0xFFB8860B))),
+                    RoundedCornerShape(16.dp)
+                )
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = Color(0xFF071A33), modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text, fontWeight = FontWeight.Black, color = Color(0xFF071A33), fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContactBubble(
+    icon: ImageVector,
+    label: String,
+    color: Color,
+    tag: String,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() }
+            .padding(4.dp)
+            .testTag(tag)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(color.copy(alpha = 0.18f))
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            ) {
+                Icon(icon, contentDescription = label, tint = PureWhite, modifier = Modifier.size(17.dp))
+            }
+        }
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(label, fontSize = 10.sp, color = PureWhite.copy(alpha = 0.75f), fontWeight = FontWeight.Medium)
     }
 }
