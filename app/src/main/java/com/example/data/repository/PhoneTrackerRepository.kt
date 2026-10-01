@@ -1,6 +1,7 @@
 package com.example.data.repository
 
 import android.content.Context
+import com.example.BuildConfig
 import com.example.data.dao.AlertDao
 import com.example.data.dao.ReportDao
 import com.example.data.model.AlertEntity
@@ -28,11 +29,14 @@ class PhoneTrackerRepository(
     val activeStolenCount: Flow<Int> = reportDao.getActiveStolenCount()
 
     init {
-        // Pre-populate with realistic Yemen sample data if database is empty
-        CoroutineScope(Dispatchers.IO).launch {
-            val existing = reportDao.getAllReports().first()
-            if (existing.isEmpty()) {
-                seedInitialYemenReports()
+        // Demo data (fake names, phones and IMEIs) is for DEBUG builds only.
+        // A production IMEI registry must never contain fabricated stolen reports.
+        if (BuildConfig.DEBUG) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val existing = reportDao.getAllReports().first()
+                if (existing.isEmpty()) {
+                    seedInitialYemenReports()
+                }
             }
         }
 
@@ -77,7 +81,11 @@ class PhoneTrackerRepository(
         }
     }
 
-    suspend fun insertReport(report: ReportEntity, notifyBroadcast: Boolean = true): Long {
+    suspend fun insertReport(
+        report: ReportEntity,
+        notifyBroadcast: Boolean = true,
+        publishToCloud: Boolean = true
+    ): Long {
         val id = reportDao.insertReport(report)
 
         val alertTitle = when (report.reportType) {
@@ -100,7 +108,7 @@ class PhoneTrackerRepository(
         alertDao.insertAlert(alert)
 
         // Publish to Firebase Cloud Firestore if signed in
-        if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) {
+        if (publishToCloud && com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) {
             try {
                 val cloudId = firestoreService.publishReportToCloud(report)
                 firestoreService.publishAlertToCloud(alert, cloudId)
@@ -192,6 +200,10 @@ class PhoneTrackerRepository(
         alertDao.markAllAsRead()
     }
 
+    /**
+     * Local-only simulation used to demo the alert flow. It never publishes to the cloud,
+     * so fake reports and phone numbers can't leak into the national database.
+     */
     suspend fun simulateBroadcastAlert(
         governorate: String,
         brand: String,
@@ -217,7 +229,7 @@ class PhoneTrackerRepository(
             policeReportNumber = "ص/2026/892",
             createdAt = now
         )
-        insertReport(simulatedReport, notifyBroadcast = true)
+        insertReport(simulatedReport, notifyBroadcast = true, publishToCloud = false)
     }
 
     private suspend fun seedInitialYemenReports() {
