@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
@@ -27,29 +30,33 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -60,15 +67,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.StatusBadge
+import com.example.ui.components.formatAmount
 import com.example.ui.components.formatRelativeTime
+import com.example.ui.components.shortBrand
 import com.example.ui.theme.AlertRed
-import com.example.ui.theme.Navy700
-import com.example.ui.theme.Navy800
+import com.example.ui.theme.BrandBg
+import com.example.ui.theme.BrandBorder
+import com.example.ui.theme.BrandCyan
+import com.example.ui.theme.BrandSurface
+import com.example.ui.theme.BrandSurfaceHigh
 import com.example.ui.theme.PureWhite
 import com.example.ui.theme.SuccessGreen
-import com.example.ui.theme.SuccessGreenLight
+import com.example.ui.theme.TextSecondaryLight
 import com.example.ui.theme.WarningAmber
-import com.example.ui.theme.WarningAmberLight
+import com.example.ui.theme.YemenGold
 import com.example.ui.viewmodel.PhoneTrackerViewModel
 import com.example.util.IntentHelper
 
@@ -84,436 +96,303 @@ fun ReportDetailScreen(
     val clipboardManager = LocalClipboardManager.current
     val report by viewModel.selectedReport.collectAsStateWithLifecycle()
     val isSuperAdmin by com.example.util.AdminManager.isSuperAdmin.collectAsStateWithLifecycle()
+    var confirmDelete by remember { mutableStateOf(false) }
+    var confirmBan by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
+        containerColor = BrandBg,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = if (report != null) "تفاصيل البلاغ #${report?.id}" else "تفاصيل البلاغ",
-                        color = PureWhite,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold
+                        text = report?.let { "بلاغ #${it.id}" } ?: "تفاصيل البلاغ",
+                        color = PureWhite, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("detail_back_button")) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع",
-                            tint = PureWhite
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع", tint = PureWhite)
                     }
                 },
                 actions = {
-                    if (report != null) {
-                        IconButton(
-                            onClick = { IntentHelper.shareReport(context, report!!) },
-                            modifier = Modifier.testTag("detail_share_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "مشاركة",
-                                tint = PureWhite
-                            )
+                    report?.let { r ->
+                        IconButton(onClick = { IntentHelper.shareReport(context, r) }, modifier = Modifier.testTag("detail_share_button")) {
+                            Icon(Icons.Default.Share, contentDescription = "مشاركة", tint = PureWhite)
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Navy800)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBg)
             )
+        },
+        bottomBar = {
+            report?.let { item ->
+                Surface(color = BrandSurface, border = BorderStroke(1.dp, BrandBorder)) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = { IntentHelper.makeCall(context, item.primaryPhone) },
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandSurfaceHigh, contentColor = PureWhite),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f).height(52.dp).testTag("detail_call_button")
+                        ) {
+                            Icon(Icons.Default.Call, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("اتصال", fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = {
+                                val msg = "السلام عليكم، أتواصل معك بخصوص بلاغ الهاتف (${item.brand} ${item.model}) عبر تطبيق أمان فون."
+                                IntentHelper.openWhatsApp(context, item.whatsappNumber, msg)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen, contentColor = PureWhite),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f).height(52.dp).testTag("detail_whatsapp_button")
+                        ) {
+                            Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("واتساب", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
         }
     ) { innerPadding ->
-        if (report == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "لم يتم العثور على البلاغ المطلوب", fontSize = 15.sp)
-            }
-        } else {
-            val item = report!!
+        val item = report
+        if (item == null) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                Modifier.fillMaxSize().padding(innerPadding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                // 1. Status & Header Banner
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            StatusBadge(reportType = item.reportType, isRecovered = item.isRecovered)
-                            Text(
-                                text = "تاريخ البلاغ: ${formatRelativeTime(item.createdAt)}",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Text(
-                            text = "${item.brand} ${item.model}",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        // Reward Card if present
-                        if (item.rewardAmount > 0 && !item.isRecovered) {
-                            Surface(
-                                color = WarningAmberLight,
-                                shape = RoundedCornerShape(10.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, WarningAmber),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "💰 مكافأة مالية لمن يعثر عليه:",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                        color = Color(0xFF8A5A00)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "${"%,d".format(item.rewardAmount)} ريال يمني",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = Color(0xFF8A5A00)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 2. Hardware Specs & IMEI
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.PhoneAndroid, contentDescription = null, tint = Navy700)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "الأرقام التسلسلية والمواصفات",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-
-                        // IMEI 1 with Copy
-                        Surface(
-                            color = Navy700.copy(alpha = 0.05f),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "رقم IMEI 1 الرئيسي",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = item.imei1,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = if (item.isStolen) AlertRed else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                IconButton(
-                                    onClick = {
-                                        clipboardManager.setText(AnnotatedString(item.imei1))
-                                        Toast.makeText(context, "تم نسخ رقم IMEI للحافظة", Toast.LENGTH_SHORT).show()
-                                    }
-                                ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = "نسخ", tint = Navy700)
-                                }
-                            }
-                        }
-
-                        if (item.imei2.isNotBlank()) {
-                            Text(
-                                text = "رقم IMEI 2: ${item.imei2}",
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        if (item.serialNumber.isNotBlank()) {
-                            Text(
-                                text = "الرقم التسلسلي (S/N): ${item.serialNumber}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Text(
-                            text = "🎨 اللون: ${item.color}",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        if (item.distinctiveMarks.isNotBlank()) {
-                            Text(
-                                text = "🔍 علامات فارقة: ${item.distinctiveMarks}",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
-                // 3. Location Details
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = AlertRed)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "مكان ووقت الفقدان / السرقة",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-                        Text(
-                            text = "المحافظة: ${item.governorate}",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        if (item.district.isNotBlank()) {
-                            Text(
-                                text = "المديرية / المنطقة: ${item.district}",
-                                fontSize = 13.sp
-                            )
-                        }
-                        Text(
-                            text = "الموقع المحدد أو أقرب سوق: ${item.incidentLocation}",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (item.policeReportNumber.isNotBlank()) {
-                            Text(
-                                text = "👮 رقم بلاغ الشرطة والبحث الجنائي: ${item.policeReportNumber}",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = AlertRed
-                            )
-                        }
-                    }
-                }
-
-                // 4. Contact Person Details
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = Navy700)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "بيانات التواصل مع صاحب البلاغ",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-
-                        Text(
-                            text = "صاحب البلاغ: ${item.contactName}",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "رقم الهاتف: ${item.primaryPhone}",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        // Contact Buttons
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Button(
-                                onClick = { IntentHelper.makeCall(context, item.primaryPhone) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Navy700),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(46.dp)
-                                    .testTag("detail_call_button")
-                            ) {
-                                Icon(Icons.Default.Call, contentDescription = null, tint = PureWhite)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("اتصال هاتفي", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            }
-
-                            Button(
-                                onClick = {
-                                    val msg = "السلام عليكم ورحمة الله، أنا أتواصل معك بخصوص بلاغ الهاتف المفقود (${item.brand} ${item.model}) عبر تطبيق أمان فون..."
-                                    IntentHelper.openWhatsApp(context, item.whatsappNumber, msg)
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(46.dp)
-                                    .testTag("detail_whatsapp_button")
-                            ) {
-                                Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null, tint = PureWhite)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("مراسلة واتساب", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-
-                // 5. Exclusive Admin Actions (Visible ONLY to Hashem / Super Admin)
-                if (isSuperAdmin) {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Navy800),
-                        border = androidx.compose.foundation.BorderStroke(1.5.dp, WarningAmber),
-                        modifier = Modifier.fillMaxWidth().testTag("admin_detail_actions_card")
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("👑", fontSize = 22.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = "صلاحيات المشرف العام (المهندس هاشم القديمي)",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                        color = WarningAmber
-                                    )
-                                    Text(
-                                        text = "تحكم إداري كامل وحصري بهذا البلاغ وصاحبه",
-                                        fontSize = 10.sp,
-                                        color = PureWhite.copy(alpha = 0.7f)
-                                    )
-                                }
-                            }
-
-                            Button(
-                                onClick = {
-                                    viewModel.toggleRecovered(item.id, !item.isRecovered)
-                                    Toast.makeText(
-                                        context,
-                                        if (!item.isRecovered) "تم تسجيل استرجاع الجهاز رسمياً كمشرف" else "تم إلغاء حالة الاسترجاع",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (item.isRecovered) Color(0xFF64748B) else SuccessGreen
-                                ),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.fillMaxWidth().height(44.dp).testTag("admin_toggle_recovery_btn")
-                            ) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (item.isRecovered) "إلغاء وضع الاسترجاع" else "تأكيد وتوثيق استرجاع الجهاز ✅",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        viewModel.adminDeleteReport(item.id)
-                                        Toast.makeText(context, "تم حذف البلاغ نهائياً من قبل المشرف العام", Toast.LENGTH_SHORT).show()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.weight(1f).height(44.dp).testTag("admin_delete_report_button")
-                                ) {
-                                    Icon(Icons.Default.Delete, contentDescription = null, tint = PureWhite, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("حذف البلاغ", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        com.example.util.AdminManager.banAccount(
-                                            item.primaryPhone,
-                                            "حظر بواسطة المشرف في البلاغ #${item.id}"
-                                        )
-                                        Toast.makeText(context, "تم حظر رقم [${item.primaryPhone}] بنجاح 🚫", Toast.LENGTH_LONG).show()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.weight(1f).height(44.dp).testTag("admin_ban_owner_button")
-                                ) {
-                                    Text("🚫 حظر الرقم", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PureWhite)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
+                Icon(Icons.Default.SearchOff, contentDescription = null, tint = TextSecondaryLight, modifier = Modifier.size(56.dp))
+                Spacer(Modifier.height(10.dp))
+                Text("لم يتم العثور على البلاغ", color = PureWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("ربما حُذف أو لم تتم مزامنته بعد", color = TextSecondaryLight, fontSize = 12.sp)
             }
+            return@Scaffold
+        }
+
+        val accent = when {
+            item.isRecovered -> SuccessGreen
+            item.reportType == "STOLEN" -> AlertRed
+            item.reportType == "LOST" -> WarningAmber
+            else -> Color(0xFF7CC4FF)
+        }
+
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // ===== Hero =====
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.28f), BrandSurface)))
+            ) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).background(accent.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) { Icon(Icons.Default.PhoneAndroid, contentDescription = null, tint = accent, modifier = Modifier.size(30.dp)) }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(shortBrand(item.brand), color = YemenGold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(item.model, color = PureWhite, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp)
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        StatusBadge(reportType = item.reportType, isRecovered = item.isRecovered)
+                        Spacer(Modifier.width(8.dp))
+                        Text(formatRelativeTime(item.createdAt), color = TextSecondaryLight, fontSize = 12.sp)
+                    }
+                    if (item.rewardAmount > 0 && !item.isRecovered) {
+                        Surface(shape = RoundedCornerShape(50), color = YemenGold.copy(alpha = 0.16f), border = BorderStroke(1.dp, YemenGold.copy(alpha = 0.5f))) {
+                            Text(
+                                "💰 مكافأة ${formatAmount(item.rewardAmount.toLong())} ريال لمن يعثر عليه",
+                                color = YemenGold, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ===== IMEI =====
+            Section(Icons.Default.Shield, "الأرقام التسلسلية") {
+                ImeiRow("IMEI 1", item.imei1, highlight = item.isStolen) {
+                    clipboardManager.setText(AnnotatedString(item.imei1))
+                    Toast.makeText(context, "تم نسخ رقم IMEI", Toast.LENGTH_SHORT).show()
+                }
+                if (item.imei2.isNotBlank()) {
+                    ImeiRow("IMEI 2", item.imei2, highlight = false) {
+                        clipboardManager.setText(AnnotatedString(item.imei2))
+                        Toast.makeText(context, "تم نسخ رقم IMEI", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                if (item.serialNumber.isNotBlank()) KV("الرقم التسلسلي", item.serialNumber)
+                if (item.color.isNotBlank()) KV("اللون", item.color)
+                if (item.distinctiveMarks.isNotBlank()) KV("علامات فارقة", item.distinctiveMarks)
+            }
+
+            // ===== Location =====
+            Section(Icons.Default.LocationOn, "مكان الحادثة") {
+                KV("المحافظة", item.governorate)
+                if (item.district.isNotBlank()) KV("المديرية", item.district)
+                KV("المكان", item.incidentLocation)
+                if (item.policeReportNumber.isNotBlank()) KV("بلاغ الشرطة", item.policeReportNumber, AlertRed)
+            }
+
+            // ===== Contact =====
+            Section(Icons.Default.Person, "صاحب البلاغ") {
+                KV("الاسم", item.contactName)
+                KV("الهاتف", item.primaryPhone, mono = true)
+            }
+
+            // ===== Admin =====
+            if (isSuperAdmin) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = BrandSurface,
+                    border = BorderStroke(1.dp, YemenGold.copy(alpha = 0.6f)),
+                    modifier = Modifier.fillMaxWidth().testTag("admin_detail_actions_card")
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("أدوات المشرف العام", color = YemenGold, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                        Button(
+                            onClick = {
+                                viewModel.toggleRecovered(item.id, !item.isRecovered)
+                                Toast.makeText(context, if (!item.isRecovered) "تم توثيق استرجاع الجهاز ✅" else "تم إلغاء حالة الاسترجاع", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (item.isRecovered) BrandSurfaceHigh else SuccessGreen,
+                                contentColor = PureWhite
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().height(46.dp).testTag("admin_toggle_recovery_btn")
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(if (item.isRecovered) "إلغاء وضع الاسترجاع" else "توثيق استرجاع الجهاز", fontWeight = FontWeight.Bold)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { confirmDelete = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = AlertRed.copy(alpha = 0.18f), contentColor = AlertRed),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f).height(44.dp).testTag("admin_delete_report_button")
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("حذف البلاغ", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Button(
+                                onClick = { confirmBan = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = BrandSurfaceHigh, contentColor = PureWhite),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f).height(44.dp).testTag("admin_ban_owner_button")
+                            ) {
+                                Icon(Icons.Default.Block, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("حظر الرقم", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+        }
+
+        if (confirmDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                containerColor = BrandSurface,
+                title = { Text("حذف البلاغ نهائياً؟", color = PureWhite, fontWeight = FontWeight.Bold) },
+                text = { Text("لا يمكن التراجع عن هذا الإجراء.", color = TextSecondaryLight) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmDelete = false
+                        viewModel.adminDeleteReport(item.id)
+                        Toast.makeText(context, "تم حذف البلاغ", Toast.LENGTH_SHORT).show()
+                    }) { Text("حذف", color = AlertRed, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("إلغاء", color = PureWhite) } }
+            )
+        }
+        if (confirmBan) {
+            AlertDialog(
+                onDismissRequest = { confirmBan = false },
+                containerColor = BrandSurface,
+                title = { Text("حظر الرقم ${item.primaryPhone}؟", color = PureWhite, fontWeight = FontWeight.Bold) },
+                text = { Text("لن يتمكن صاحب هذا الرقم من نشر بلاغات جديدة.", color = TextSecondaryLight) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmBan = false
+                        com.example.util.AdminManager.banAccount(item.primaryPhone, "حظر بواسطة المشرف في البلاغ #${item.id}")
+                        Toast.makeText(context, "تم حظر الرقم 🚫", Toast.LENGTH_LONG).show()
+                    }) { Text("حظر", color = AlertRed, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = { TextButton(onClick = { confirmBan = false }) { Text("إلغاء", color = PureWhite) } }
+            )
+        }
+    }
+}
+
+@Composable
+private fun Section(icon: ImageVector, title: String, content: @Composable () -> Unit) {
+    Surface(shape = RoundedCornerShape(20.dp), color = BrandSurface, border = BorderStroke(1.dp, BrandBorder)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = BrandCyan, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(title, color = PureWhite, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+            }
+            HorizontalDivider(color = BrandBorder)
+            content()
+        }
+    }
+}
+
+@Composable
+private fun KV(label: String, value: String, valueColor: Color = PureWhite, mono: Boolean = false) {
+    Row(Modifier.fillMaxWidth()) {
+        Text(label, color = TextSecondaryLight, fontSize = 13.sp, modifier = Modifier.width(100.dp))
+        Text(
+            value, color = valueColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+            fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ImeiRow(label: String, imei: String, highlight: Boolean, onCopy: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(BrandBg)
+            .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, color = TextSecondaryLight, fontSize = 11.sp)
+            Text(
+                imei, color = if (highlight) Color(0xFFFF8A8E) else PureWhite,
+                fontFamily = FontFamily.Monospace, fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp
+            )
+        }
+        IconButton(onClick = onCopy) {
+            Icon(Icons.Default.ContentCopy, contentDescription = "نسخ", tint = YemenGold, modifier = Modifier.size(20.dp))
         }
     }
 }
