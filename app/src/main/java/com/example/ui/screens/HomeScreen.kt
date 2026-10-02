@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -69,12 +72,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.data.model.ReportEntity
 import com.example.data.model.YemenLocations
 import com.example.ui.components.ReportItemCard
@@ -95,6 +102,7 @@ import com.example.ui.theme.WarningAmber
 import com.example.ui.viewmodel.AppScreen
 import com.example.ui.viewmodel.PhoneTrackerViewModel
 import com.example.util.IntentHelper
+import com.google.firebase.auth.FirebaseUser
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -304,9 +312,9 @@ fun HomeScreen(
                 }
             }
 
-            // 1.5. Firebase Google Cloud Sync & Auth Banner
+            // 1.5. Firebase Cloud Sync & Auth Banner
             item {
-                FirebaseCloudAuthCard()
+                FirebaseCloudAuthCard(onOpenLogin = { viewModel.navigateTo(AppScreen.LOGIN) })
             }
 
             // 2. Statistics Row
@@ -681,13 +689,42 @@ fun HomeScreen(
 }
 }
 
+/** How the current Firebase user signed in. */
+private enum class SignInMethod { GOOGLE, EMAIL, PHONE, OTHER }
+
+private fun FirebaseUser.signInMethod(): SignInMethod {
+    val providers = providerData.map { it.providerId }
+    return when {
+        "google.com" in providers -> SignInMethod.GOOGLE
+        "phone" in providers -> SignInMethod.PHONE
+        "password" in providers -> SignInMethod.EMAIL
+        !phoneNumber.isNullOrBlank() -> SignInMethod.PHONE
+        !email.isNullOrBlank() -> SignInMethod.EMAIL
+        else -> SignInMethod.OTHER
+    }
+}
+
+/** +967712345678 -> +967 712 345 678 */
+private fun formatYemeniPhone(raw: String?): String {
+    val p = raw?.trim().orEmpty()
+    if (p.startsWith("+967") && p.length == 13) {
+        val local = p.substring(4)
+        return "+967 ${local.substring(0, 3)} ${local.substring(3, 6)} ${local.substring(6)}"
+    }
+    return p
+}
+
 @Composable
-fun FirebaseCloudAuthCard(modifier: Modifier = Modifier) {
+fun FirebaseCloudAuthCard(
+    modifier: Modifier = Modifier,
+    onOpenLogin: () -> Unit = {}
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
     val currentUser by FirebaseAuthManager.currentUser.collectAsStateWithLifecycle()
-    var isLoading by remember { mutableStateOf(false) }
+
+    val darkGreen = Color(0xFF0B4D2C)
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -700,8 +737,38 @@ fun FirebaseCloudAuthCard(modifier: Modifier = Modifier) {
             if (currentUser != null) SuccessGreen.copy(alpha = 0.4f) else Navy700.copy(alpha = 0.2f)
         )
     ) {
-        if (currentUser != null) {
-            val user = currentUser!!
+        val user = currentUser
+        if (user != null) {
+            val method = user.signInMethod()
+            val title: String
+            val subtitle: String
+            when (method) {
+                SignInMethod.GOOGLE -> {
+                    title = user.displayName?.takeIf { it.isNotBlank() } ?: user.email ?: "حساب Google"
+                    subtitle = if (!user.displayName.isNullOrBlank() && !user.email.isNullOrBlank()) {
+                        "دخول عبر Google • ${user.email}"
+                    } else {
+                        "دخول عبر Google"
+                    }
+                }
+                SignInMethod.EMAIL -> {
+                    title = user.email ?: "حساب بريد إلكتروني"
+                    subtitle = if (user.isEmailVerified) {
+                        "دخول بالبريد الإلكتروني • مفعّل ✅"
+                    } else {
+                        "دخول بالبريد • بانتظار تفعيل البريد ⚠️"
+                    }
+                }
+                SignInMethod.PHONE -> {
+                    title = formatYemeniPhone(user.phoneNumber).ifBlank { "رقم هاتف موثّق" }
+                    subtitle = "دخول برقم الهاتف • موثّق برمز SMS"
+                }
+                SignInMethod.OTHER -> {
+                    title = user.displayName ?: "مستخدم أمان فون"
+                    subtitle = "متصل بسحابة Firebase"
+                }
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -709,36 +776,78 @@ fun FirebaseCloudAuthCard(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(SuccessGreen),
+                            .background(if (method == SignInMethod.GOOGLE) PureWhite else SuccessGreen),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudDone,
-                            contentDescription = null,
-                            tint = PureWhite,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        when (method) {
+                            SignInMethod.GOOGLE -> Image(
+                                painter = painterResource(id = R.drawable.ic_google_logo),
+                                contentDescription = "Google",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            SignInMethod.EMAIL -> Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = null,
+                                tint = PureWhite,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            SignInMethod.PHONE -> Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = null,
+                                tint = PureWhite,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            SignInMethod.OTHER -> Icon(
+                                imageVector = Icons.Default.CloudDone,
+                                contentDescription = null,
+                                tint = PureWhite,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = user.displayName ?: "مستخدم جوجل",
+                            text = title,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontSize = 13.sp,
+                            color = darkGreen,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "متصل بسحابة Firebase ومزامنة البلاغات نشطة",
+                            text = subtitle,
                             fontSize = 10.sp,
-                            color = SuccessGreen
+                            color = darkGreen.copy(alpha = 0.8f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.CloudDone,
+                                contentDescription = null,
+                                tint = SuccessGreen,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "متصل بسحابة Firebase والمزامنة نشطة",
+                                fontSize = 9.5.sp,
+                                color = SuccessGreen
+                            )
+                        }
                     }
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 OutlinedButton(
                     onClick = {
@@ -752,10 +861,11 @@ fun FirebaseCloudAuthCard(modifier: Modifier = Modifier) {
                         )
                     },
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                    modifier = Modifier.height(32.dp)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, darkGreen.copy(alpha = 0.5f)),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                    modifier = Modifier.height(32.dp).testTag("sign_out_button")
                 ) {
-                    Text("خروج", fontSize = 11.sp)
+                    Text("خروج", fontSize = 11.sp, color = darkGreen, fontWeight = FontWeight.Bold)
                 }
             }
         } else {
@@ -793,7 +903,7 @@ fun FirebaseCloudAuthCard(modifier: Modifier = Modifier) {
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "سجل الدخول بحساب Google لمزامنة البلاغات",
+                            text = "سجّل الدخول بـ Google أو البريد أو الهاتف لمزامنة البلاغات",
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -801,41 +911,15 @@ fun FirebaseCloudAuthCard(modifier: Modifier = Modifier) {
                 }
 
                 Button(
-                    onClick = {
-                        isLoading = true
-                        FirebaseAuthManager.onGoogleSignInClicked(
-                            context = context,
-                            credentialManager = credentialManager,
-                            onAuthSuccess = {
-                                isLoading = false
-                                Toast.makeText(context, "تم تسجيل الدخول بنجاح عبر Google!", Toast.LENGTH_SHORT).show()
-                            },
-                            onAuthError = { err ->
-                                isLoading = false
-                                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
-                            },
-                            scope = coroutineScope,
-                            onAuthCancelled = { isLoading = false }
-                        )
-                    },
-                    enabled = !isLoading,
+                    onClick = onOpenLogin,
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Navy700),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                     modifier = Modifier.height(34.dp).testTag("google_sign_in_button")
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = PureWhite,
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("دخول Google", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
+                    Text("تسجيل الدخول", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Navy900)
                 }
             }
         }
     }
 }
-
