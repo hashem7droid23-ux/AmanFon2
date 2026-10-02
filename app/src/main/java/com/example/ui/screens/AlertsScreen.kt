@@ -5,11 +5,13 @@ import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,18 +30,14 @@ import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,17 +59,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.BuildConfig
 import com.example.data.model.AlertEntity
 import com.example.ui.components.formatRelativeTime
 import com.example.ui.theme.AlertRed
-import com.example.ui.theme.AlertRedLight
-import com.example.ui.theme.Navy700
-import com.example.ui.theme.Navy800
-import com.example.ui.theme.Navy900
+import com.example.ui.theme.BrandBg
+import com.example.ui.theme.BrandBorder
+import com.example.ui.theme.BrandCyan
+import com.example.ui.theme.BrandInk
+import com.example.ui.theme.BrandSurface
+import com.example.ui.theme.BrandSurfaceHigh
 import com.example.ui.theme.PureWhite
 import com.example.ui.theme.SuccessGreen
-import com.example.ui.theme.WarningAmber
-import com.example.ui.theme.WarningAmberLight
+import com.example.ui.theme.TextSecondaryLight
+import com.example.ui.theme.YemenGold
 import com.example.ui.viewmodel.PhoneTrackerViewModel
 import com.example.util.NotificationHelper
 
@@ -87,6 +88,8 @@ fun AlertsScreen(
     val context = LocalContext.current
     val alerts by viewModel.allAlerts.collectAsStateWithLifecycle(initialValue = emptyList())
     val unreadCount by viewModel.unreadAlertsCount.collectAsStateWithLifecycle()
+    val isAdmin by com.example.util.AdminManager.isAdmin.collectAsStateWithLifecycle()
+    val canSendTest = isAdmin || BuildConfig.DEBUG
 
     var hasNotificationPermission by remember {
         mutableStateOf(NotificationHelper.hasNotificationPermission(context))
@@ -96,36 +99,34 @@ fun AlertsScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasNotificationPermission = isGranted
-        if (isGranted) {
-            viewModel.simulateTheftBroadcast()
-        }
     }
 
     Scaffold(
         modifier = modifier,
+        containerColor = BrandBg,
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "مركز التنبيهات والشعارات الفورية",
+                            text = "التنبيهات",
                             color = PureWhite,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black
                         )
                         if (unreadCount > 0) {
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Box(
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .background(WarningAmber)
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .background(YemenGold)
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
                             ) {
                                 Text(
                                     text = "$unreadCount جديد",
-                                    color = Navy900,
+                                    color = BrandInk,
                                     fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Black
                                 )
                             }
                         }
@@ -141,7 +142,7 @@ fun AlertsScreen(
                     }
                 },
                 actions = {
-                    if (alerts.isNotEmpty()) {
+                    if (unreadCount > 0) {
                         IconButton(
                             onClick = { viewModel.markAllAlertsRead() },
                             modifier = Modifier.testTag("mark_all_read_button")
@@ -149,176 +150,154 @@ fun AlertsScreen(
                             Icon(
                                 imageVector = Icons.Default.DoneAll,
                                 contentDescription = "قراءة الكل",
-                                tint = PureWhite
+                                tint = YemenGold
                             )
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Navy800)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBg)
             )
         }
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(innerPadding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 1. Permission Banner if notifications are not enabled
+            // 1. Notification permission
             if (!hasNotificationPermission) {
                 item {
-                    Card(
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = WarningAmberLight),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, WarningAmber)
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = BrandSurface,
+                        border = BorderStroke(1.dp, YemenGold.copy(alpha = 0.5f))
                     ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Warning, contentDescription = null, tint = WarningAmber)
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(YemenGold.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.NotificationsOff, contentDescription = null, tint = YemenGold, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = "تفعيل إشعارات النظام في أندرويد",
+                                    text = "فعّل الإشعارات لتصلك التنبيهات فوراً",
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                    color = Navy900
+                                    fontSize = 14.sp,
+                                    color = PureWhite
                                 )
                             }
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "لتصلك التنبيهات فوراً عند سرقة أو فقدان هاتف في محافظتك، يرجى تفعيل إذن الإشعارات.",
-                                fontSize = 11.sp,
-                                color = Navy900
+                                text = "عند سرقة أو فقدان هاتف في محافظتك بننبهك مباشرة.",
+                                fontSize = 12.sp,
+                                color = TextSecondaryLight
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             Button(
                                 onClick = {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                         permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     }
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = Navy700),
-                                shape = RoundedCornerShape(8.dp)
+                                colors = ButtonDefaults.buttonColors(containerColor = YemenGold),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().height(46.dp)
                             ) {
-                                Text("تفعيل الإشعارات الفورية الآن", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text("تفعيل الإشعارات", fontSize = 13.sp, fontWeight = FontWeight.Black, color = BrandInk)
                             }
                         }
                     }
                 }
             }
 
-            // 2. Broadcast Simulator Card
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Navy700)
-                ) {
+            // 2. Test broadcast (admin / debug only)
+            if (canSendTest) {
+                item {
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = BrandSurface,
+                        border = BorderStroke(1.dp, BrandBorder)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(AlertRed.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Campaign, contentDescription = null, tint = AlertRed, modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("إشعار تجريبي", color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("للمشرف فقط • لا يُنشر للمستخدمين", color = TextSecondaryLight, fontSize = 10.sp)
+                            }
+                            Button(
+                                onClick = {
+                                    if (hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                                        viewModel.simulateTheftBroadcast()
+                                    } else {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.height(36.dp).testTag("send_test_alert_button")
+                            ) {
+                                Text("إرسال", color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. List
+            if (alerts.isEmpty()) {
+                item {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                            .padding(vertical = 60.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(PureWhite.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Campaign,
-                                    contentDescription = null,
-                                    tint = PureWhite,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "نظام البث المباشر الموحد لمحافظات اليمن",
-                                    color = PureWhite,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    text = "يقوم بإرسال شعار فوري لجميع الهواتف ومحلات الجوالات في الجمهورية",
-                                    color = PureWhite.copy(alpha = 0.8f),
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-
-                        Button(
-                            onClick = {
-                                if (hasNotificationPermission) {
-                                    viewModel.simulateTheftBroadcast()
-                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                } else {
-                                    viewModel.simulateTheftBroadcast()
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
-                            shape = RoundedCornerShape(10.dp),
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("send_test_alert_button")
+                                .size(72.dp)
+                                .clip(CircleShape)
+                                .background(BrandSurfaceHigh),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = PureWhite)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "إرسال شعار وتنبيه فوري تجريبي للهاتف",
-                                color = PureWhite,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
+                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = YemenGold, modifier = Modifier.size(34.dp))
                         }
-                    }
-                }
-            }
-
-            // 3. Alerts Section Title
-            item {
-                Text(
-                    text = "سجل الإشعارات والتنبيهات المستلمة (${alerts.size})",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            // 4. Alerts List
-            if (alerts.isEmpty()) {
-                item {
-                    Card(
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.NotificationsActive,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(40.dp)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = "لا توجد تنبيهات حالياً",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text("لا توجد تنبيهات حالياً", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                        Text("بنبلغك أول ما ينزل بلاغ جديد", fontSize = 12.sp, color = TextSecondaryLight)
                     }
                 }
             } else {
+                item {
+                    Text(
+                        text = "السجل (${alerts.size})",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondaryLight,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
                 items(alerts, key = { it.id }) { alert ->
                     AlertItemCard(
                         alert = alert,
@@ -331,6 +310,8 @@ fun AlertsScreen(
                     )
                 }
             }
+
+            item { Spacer(modifier = Modifier.height(12.dp)) }
         }
     }
 }
@@ -341,24 +322,24 @@ fun AlertItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isUrgent = alert.alertType == "URGENT_THEFT"
-    val isRecovery = alert.alertType == "RECOVERY"
-
-    val (cardBg, accentColor, icon) = when {
-        isRecovery -> Triple(Color(0xFFF0FDF4), SuccessGreen, Icons.Default.CheckCircle)
-        isUrgent -> Triple(if (!alert.isRead) AlertRedLight else MaterialTheme.colorScheme.surface, AlertRed, Icons.Default.Security)
-        else -> Triple(MaterialTheme.colorScheme.surface, Navy700, Icons.Default.PhoneAndroid)
+    val accent: Color
+    val icon = when (alert.alertType) {
+        "RECOVERY" -> { accent = SuccessGreen; Icons.Default.CheckCircle }
+        "URGENT_THEFT" -> { accent = AlertRed; Icons.Default.Security }
+        "SUPERVISOR_BROADCAST" -> { accent = YemenGold; Icons.Default.Campaign }
+        else -> { accent = BrandCyan; Icons.Default.PhoneAndroid }
     }
+    val unread = !alert.isRead
 
-    Card(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
             .clickable { onClick() }
             .testTag("alert_card_${alert.id}"),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (!alert.isRead) 3.dp else 1.dp),
-        border = if (!alert.isRead) androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.5f)) else null
+        shape = RoundedCornerShape(18.dp),
+        color = if (unread) BrandSurfaceHigh else BrandSurface,
+        border = BorderStroke(1.dp, if (unread) accent.copy(alpha = 0.55f) else BrandBorder)
     ) {
         Row(
             modifier = Modifier
@@ -368,17 +349,12 @@ fun AlertItemCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(42.dp)
                     .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.15f)),
+                    .background(accent.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(imageVector = icon, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -386,15 +362,23 @@ fun AlertItemCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (unread) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(accent)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
                     Text(
                         text = alert.title,
-                        fontWeight = if (!alert.isRead) FontWeight.Bold else FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
+                        fontWeight = if (unread) FontWeight.Black else FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        color = PureWhite,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
@@ -402,7 +386,7 @@ fun AlertItemCard(
                     Text(
                         text = formatRelativeTime(alert.timestamp),
                         fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = TextSecondaryLight
                     )
                 }
 
@@ -411,12 +395,13 @@ fun AlertItemCard(
                 Text(
                     text = alert.message,
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    color = PureWhite.copy(alpha = 0.78f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -424,23 +409,23 @@ fun AlertItemCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        color = Navy700.copy(alpha = 0.08f),
-                        shape = RoundedCornerShape(6.dp)
+                        color = BrandBg.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(50)
                     ) {
                         Text(
                             text = "📍 ${alert.governorate}",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Navy700,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            color = PureWhite.copy(alpha = 0.85f),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                         )
                     }
 
                     if (alert.reportId > 0) {
                         Text(
-                            text = "عرض التفاصيل ←",
-                            fontSize = 11.sp,
-                            color = Navy700,
+                            text = "التفاصيل ←",
+                            fontSize = 12.sp,
+                            color = YemenGold,
                             fontWeight = FontWeight.Bold
                         )
                     }
