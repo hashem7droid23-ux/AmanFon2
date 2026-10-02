@@ -262,6 +262,9 @@ object FirebaseAuthManager {
     fun mapAuthError(e: Throwable): String {
         val code = (e as? com.google.firebase.auth.FirebaseAuthException)?.errorCode ?: ""
         return when {
+            code == "ERROR_OPERATION_NOT_ALLOWED" ||
+                e.message?.contains("sign-in provider is disabled", ignoreCase = true) == true ->
+                "طريقة الدخول هذه غير مفعّلة حالياً في النظام، جرّب الدخول عبر Google"
             e is FirebaseNetworkException -> "لا يوجد اتصال بالإنترنت، تحقق من الشبكة وحاول مجدداً"
             e is FirebaseTooManyRequestsException -> "محاولات كثيرة، يرجى الانتظار قليلاً ثم المحاولة"
             e is FirebaseAuthWeakPasswordException -> "كلمة المرور ضعيفة، استخدم 6 أحرف على الأقل"
