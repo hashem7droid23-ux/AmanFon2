@@ -43,17 +43,18 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.screens.AlertsScreen
 import com.example.ui.screens.CheckImeiScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.NewReportScreen
+import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.ReportDetailScreen
 import com.example.ui.screens.YemenGuideScreen
 import com.example.ui.theme.AlertRed
 import com.example.ui.theme.BrandBg
-import com.example.ui.theme.BrandInk
 import com.example.ui.theme.BrandSurface
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.PureWhite
@@ -149,7 +150,6 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
     val showBottomBar = currentScreen in listOf(
         AppScreen.FEED,
         AppScreen.CHECK_IMEI,
-        AppScreen.NEW_REPORT,
         AppScreen.ALERTS,
         AppScreen.SHOPS_GUIDE
     )
@@ -164,7 +164,7 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
             if (showBottomBar) {
                 NavigationBar(
                     containerColor = BrandSurface,
-                    tonalElevation = 0.dp_compat(),
+                    tonalElevation = 0.dp,
                     modifier = Modifier.testTag("main_navigation_bar")
                 ) {
                     BottomItem(
@@ -172,14 +172,14 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                         icon = Icons.Default.Home,
                         label = "الرئيسية",
                         tag = "nav_tab_feed"
-                    ) { viewModel.navigateTo(AppScreen.FEED) }
+                    ) { viewModel.navigateToTab(AppScreen.FEED) }
 
                     BottomItem(
                         selected = currentScreen == AppScreen.CHECK_IMEI,
                         icon = Icons.Default.QrCodeScanner,
                         label = "فحص IMEI",
                         tag = "nav_tab_check_imei"
-                    ) { viewModel.navigateTo(AppScreen.CHECK_IMEI) }
+                    ) { viewModel.navigateToTab(AppScreen.CHECK_IMEI) }
 
                     BottomItem(
                         selected = currentScreen == AppScreen.NEW_REPORT,
@@ -191,13 +191,13 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
 
                     NavigationBarItem(
                         selected = currentScreen == AppScreen.ALERTS,
-                        onClick = { viewModel.navigateTo(AppScreen.ALERTS) },
+                        onClick = { viewModel.navigateToTab(AppScreen.ALERTS) },
                         icon = {
                             BadgedBox(
                                 badge = {
                                     if (unreadCount > 0) {
                                         Badge(containerColor = AlertRed) {
-                                            Text(text = "$unreadCount", color = PureWhite)
+                                            Text(text = if (unreadCount > 99) "99+" else "$unreadCount", color = PureWhite)
                                         }
                                     }
                                 }
@@ -215,7 +215,7 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                         icon = Icons.AutoMirrored.Filled.MenuBook,
                         label = "دليل الأمان",
                         tag = "nav_tab_guide"
-                    ) { viewModel.navigateTo(AppScreen.SHOPS_GUIDE) }
+                    ) { viewModel.navigateToTab(AppScreen.SHOPS_GUIDE) }
                 }
             }
         }
@@ -235,8 +235,8 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                         onFinishSplash = { viewModel.finishSplash() }
                     )
                     AppScreen.LOGIN -> com.example.ui.screens.LoginScreen(
-                        onLoginSuccess = { viewModel.navigateTo(AppScreen.FEED) },
-                        onSkipGuest = { viewModel.navigateTo(AppScreen.FEED) }
+                        onLoginSuccess = { viewModel.onEnteredApp() },
+                        onSkipGuest = { viewModel.onEnteredApp() }
                     )
                     AppScreen.FEED -> HomeScreen(
                         viewModel = viewModel
@@ -249,7 +249,7 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                         viewModel = viewModel,
                         onBack = { viewModel.handleBack() },
                         onReportSubmitted = { newId ->
-                            viewModel.openReportDetails(newId)
+                            viewModel.openReportReplacingCurrent(newId)
                         }
                     )
                     AppScreen.ALERTS -> AlertsScreen(
@@ -265,9 +265,13 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                     )
                     AppScreen.SHOPS_GUIDE -> YemenGuideScreen(
                         onBack = { viewModel.handleBack() },
-                        onNavigateToCheckImei = { viewModel.navigateTo(AppScreen.CHECK_IMEI) }
+                        onNavigateToCheckImei = { viewModel.navigateToTab(AppScreen.CHECK_IMEI) }
                     )
                     AppScreen.ADMIN_DASHBOARD -> com.example.ui.screens.AdminDashboardScreen(
+                        viewModel = viewModel,
+                        onBack = { viewModel.handleBack() }
+                    )
+                    AppScreen.PROFILE -> ProfileScreen(
                         viewModel = viewModel,
                         onBack = { viewModel.handleBack() }
                     )
@@ -276,8 +280,6 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
         }
     }
 }
-
-private fun Int.dp_compat() = androidx.compose.ui.unit.Dp(this.toFloat())
 
 @Composable
 private fun navColors(accent: androidx.compose.ui.graphics.Color) = NavigationBarItemDefaults.colors(
