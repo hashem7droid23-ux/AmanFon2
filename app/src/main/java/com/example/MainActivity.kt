@@ -18,9 +18,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AddCircle
@@ -37,26 +36,29 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.screens.AlertsScreen
 import com.example.ui.screens.CheckImeiScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.NewReportScreen
+import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.ReportDetailScreen
 import com.example.ui.screens.YemenGuideScreen
 import com.example.ui.theme.AlertRed
+import com.example.ui.theme.BrandBg
+import com.example.ui.theme.BrandSurface
 import com.example.ui.theme.MyApplicationTheme
-import com.example.ui.theme.Navy700
-import com.example.ui.theme.Navy800
 import com.example.ui.theme.PureWhite
+import com.example.ui.theme.YemenGold
 import com.example.ui.viewmodel.AppScreen
 import com.example.ui.viewmodel.PhoneTrackerViewModel
 import com.example.util.NotificationHelper
@@ -97,10 +99,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // 3. Handle Intent Extras if clicked from Notification
+        // 5. Handle Intent Extras if clicked from Notification
         handleIntent(intent)
 
-        // 4. Silent Google Auto-Sign-In attempt
+        // 6. Silent Google Auto-Sign-In attempt
         val credentialManager = androidx.credentials.CredentialManager.create(this)
         lifecycleScope.launch {
             com.example.data.remote.FirebaseAuthManager.attemptAutoSignIn(
@@ -148,75 +150,54 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
     val showBottomBar = currentScreen in listOf(
         AppScreen.FEED,
         AppScreen.CHECK_IMEI,
-        AppScreen.NEW_REPORT,
         AppScreen.ALERTS,
         AppScreen.SHOPS_GUIDE
     )
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = BrandBg,
+        // Each screen's own TopAppBar / Scaffold handles the status bar.
+        // Only the splash (no scaffold of its own) needs the outer insets.
+        contentWindowInsets = if (currentScreen == AppScreen.SPLASH) WindowInsets.systemBars else WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(
-                    containerColor = Navy800,
-                    modifier = Modifier
-                        .windowInsetsPadding(WindowInsets.navigationBars)
-                        .testTag("main_navigation_bar")
+                    containerColor = BrandSurface,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.testTag("main_navigation_bar")
                 ) {
-                    NavigationBarItem(
+                    BottomItem(
                         selected = currentScreen == AppScreen.FEED,
-                        onClick = { viewModel.navigateTo(AppScreen.FEED) },
-                        icon = { Icon(Icons.Default.Home, contentDescription = "الرئيسية") },
-                        label = { Text("الرئيسية", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PureWhite,
-                            selectedTextColor = PureWhite,
-                            indicatorColor = Navy700,
-                            unselectedIconColor = PureWhite.copy(alpha = 0.6f),
-                            unselectedTextColor = PureWhite.copy(alpha = 0.6f)
-                        ),
-                        modifier = Modifier.testTag("nav_tab_feed")
-                    )
+                        icon = Icons.Default.Home,
+                        label = "الرئيسية",
+                        tag = "nav_tab_feed"
+                    ) { viewModel.navigateToTab(AppScreen.FEED) }
 
-                    NavigationBarItem(
+                    BottomItem(
                         selected = currentScreen == AppScreen.CHECK_IMEI,
-                        onClick = { viewModel.navigateTo(AppScreen.CHECK_IMEI) },
-                        icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = "فحص IMEI") },
-                        label = { Text("فحص IMEI", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PureWhite,
-                            selectedTextColor = PureWhite,
-                            indicatorColor = Navy700,
-                            unselectedIconColor = PureWhite.copy(alpha = 0.6f),
-                            unselectedTextColor = PureWhite.copy(alpha = 0.6f)
-                        ),
-                        modifier = Modifier.testTag("nav_tab_check_imei")
-                    )
+                        icon = Icons.Default.QrCodeScanner,
+                        label = "فحص IMEI",
+                        tag = "nav_tab_check_imei"
+                    ) { viewModel.navigateToTab(AppScreen.CHECK_IMEI) }
 
-                    NavigationBarItem(
+                    BottomItem(
                         selected = currentScreen == AppScreen.NEW_REPORT,
-                        onClick = { viewModel.navigateTo(AppScreen.NEW_REPORT) },
-                        icon = { Icon(Icons.Default.AddCircle, contentDescription = "تقديم بلاغ") },
-                        label = { Text("بلاغ جديد", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PureWhite,
-                            selectedTextColor = PureWhite,
-                            indicatorColor = AlertRed,
-                            unselectedIconColor = PureWhite.copy(alpha = 0.6f),
-                            unselectedTextColor = PureWhite.copy(alpha = 0.6f)
-                        ),
-                        modifier = Modifier.testTag("nav_tab_new_report")
-                    )
+                        icon = Icons.Default.AddCircle,
+                        label = "بلاغ جديد",
+                        tag = "nav_tab_new_report",
+                        accent = AlertRed
+                    ) { viewModel.navigateTo(AppScreen.NEW_REPORT) }
 
                     NavigationBarItem(
                         selected = currentScreen == AppScreen.ALERTS,
-                        onClick = { viewModel.navigateTo(AppScreen.ALERTS) },
+                        onClick = { viewModel.navigateToTab(AppScreen.ALERTS) },
                         icon = {
                             BadgedBox(
                                 badge = {
                                     if (unreadCount > 0) {
                                         Badge(containerColor = AlertRed) {
-                                            Text(text = "$unreadCount", color = PureWhite)
+                                            Text(text = if (unreadCount > 99) "99+" else "$unreadCount", color = PureWhite)
                                         }
                                     }
                                 }
@@ -225,30 +206,16 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                             }
                         },
                         label = { Text("التنبيهات", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PureWhite,
-                            selectedTextColor = PureWhite,
-                            indicatorColor = Navy700,
-                            unselectedIconColor = PureWhite.copy(alpha = 0.6f),
-                            unselectedTextColor = PureWhite.copy(alpha = 0.6f)
-                        ),
+                        colors = navColors(YemenGold),
                         modifier = Modifier.testTag("nav_tab_alerts")
                     )
 
-                    NavigationBarItem(
+                    BottomItem(
                         selected = currentScreen == AppScreen.SHOPS_GUIDE,
-                        onClick = { viewModel.navigateTo(AppScreen.SHOPS_GUIDE) },
-                        icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "دليل المحلات") },
-                        label = { Text("دليل الأمان", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PureWhite,
-                            selectedTextColor = PureWhite,
-                            indicatorColor = Navy700,
-                            unselectedIconColor = PureWhite.copy(alpha = 0.6f),
-                            unselectedTextColor = PureWhite.copy(alpha = 0.6f)
-                        ),
-                        modifier = Modifier.testTag("nav_tab_guide")
-                    )
+                        icon = Icons.AutoMirrored.Filled.MenuBook,
+                        label = "دليل الأمان",
+                        tag = "nav_tab_guide"
+                    ) { viewModel.navigateToTab(AppScreen.SHOPS_GUIDE) }
                 }
             }
         }
@@ -268,8 +235,8 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                         onFinishSplash = { viewModel.finishSplash() }
                     )
                     AppScreen.LOGIN -> com.example.ui.screens.LoginScreen(
-                        onLoginSuccess = { viewModel.navigateTo(AppScreen.FEED) },
-                        onSkipGuest = { viewModel.navigateTo(AppScreen.FEED) }
+                        onLoginSuccess = { viewModel.onEnteredApp() },
+                        onSkipGuest = { viewModel.onEnteredApp() }
                     )
                     AppScreen.FEED -> HomeScreen(
                         viewModel = viewModel
@@ -282,7 +249,7 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                         viewModel = viewModel,
                         onBack = { viewModel.handleBack() },
                         onReportSubmitted = { newId ->
-                            viewModel.openReportDetails(newId)
+                            viewModel.openReportReplacingCurrent(newId)
                         }
                     )
                     AppScreen.ALERTS -> AlertsScreen(
@@ -298,9 +265,13 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                     )
                     AppScreen.SHOPS_GUIDE -> YemenGuideScreen(
                         onBack = { viewModel.handleBack() },
-                        onNavigateToCheckImei = { viewModel.navigateTo(AppScreen.CHECK_IMEI) }
+                        onNavigateToCheckImei = { viewModel.navigateToTab(AppScreen.CHECK_IMEI) }
                     )
                     AppScreen.ADMIN_DASHBOARD -> com.example.ui.screens.AdminDashboardScreen(
+                        viewModel = viewModel,
+                        onBack = { viewModel.handleBack() }
+                    )
+                    AppScreen.PROFILE -> ProfileScreen(
                         viewModel = viewModel,
                         onBack = { viewModel.handleBack() }
                     )
@@ -308,4 +279,32 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
             }
         }
     }
+}
+
+@Composable
+private fun navColors(accent: androidx.compose.ui.graphics.Color) = NavigationBarItemDefaults.colors(
+    selectedIconColor = accent,
+    selectedTextColor = accent,
+    indicatorColor = accent.copy(alpha = 0.16f),
+    unselectedIconColor = PureWhite.copy(alpha = 0.55f),
+    unselectedTextColor = PureWhite.copy(alpha = 0.55f)
+)
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.BottomItem(
+    selected: Boolean,
+    icon: ImageVector,
+    label: String,
+    tag: String,
+    accent: androidx.compose.ui.graphics.Color = YemenGold,
+    onClick: () -> Unit
+) {
+    NavigationBarItem(
+        selected = selected,
+        onClick = onClick,
+        icon = { Icon(icon, contentDescription = label) },
+        label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+        colors = navColors(accent),
+        modifier = Modifier.testTag(tag)
+    )
 }

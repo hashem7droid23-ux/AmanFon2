@@ -25,7 +25,8 @@ enum class AppScreen {
     ALERTS,
     REPORT_DETAILS,
     SHOPS_GUIDE,
-    ADMIN_DASHBOARD
+    ADMIN_DASHBOARD,
+    PROFILE
 }
 
 sealed class ImeiCheckState {
@@ -131,10 +132,35 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
     val submissionSuccessMessage: StateFlow<String?> = _submissionSuccessMessage.asStateFlow()
 
     fun navigateTo(screen: AppScreen) {
-        if (_currentScreen.value != screen) {
+        // A signed-in user never needs the login page: send them to their account instead
+        val target = if (screen == AppScreen.LOGIN &&
+            com.example.data.remote.FirebaseAuthManager.currentUser.value != null &&
+            _currentScreen.value != AppScreen.SPLASH
+        ) AppScreen.PROFILE else screen
+        if (_currentScreen.value != target) {
             _screenHistory.add(_currentScreen.value)
-            _currentScreen.value = screen
+            _currentScreen.value = target
         }
+    }
+
+    /** Bottom-bar tabs: no deep stacks, Back from any tab returns to Home. */
+    fun navigateToTab(screen: AppScreen) {
+        if (_currentScreen.value == screen && _screenHistory.size <= 1) return
+        _screenHistory.clear()
+        if (screen != AppScreen.FEED) _screenHistory.add(AppScreen.FEED)
+        _currentScreen.value = screen
+    }
+
+    /** After login / guest entry: Home becomes the root (Back exits the app). */
+    fun onEnteredApp() {
+        _screenHistory.clear()
+        _currentScreen.value = AppScreen.FEED
+    }
+
+    /** Replace the current screen (e.g. the report form) with the new report's details. */
+    fun openReportReplacingCurrent(reportId: Long) {
+        _selectedReportId.value = reportId
+        _currentScreen.value = AppScreen.REPORT_DETAILS
     }
 
     fun openReportDetails(reportId: Long) {
@@ -143,11 +169,13 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun handleBack(): Boolean {
-        if (_screenHistory.isNotEmpty()) {
+        while (_screenHistory.isNotEmpty()) {
             val previous = _screenHistory.removeAt(_screenHistory.size - 1)
+            if (previous == AppScreen.SPLASH || previous == AppScreen.LOGIN || previous == _currentScreen.value) continue
             _currentScreen.value = previous
             return true
-        } else if (_currentScreen.value != AppScreen.FEED) {
+        }
+        if (_currentScreen.value != AppScreen.FEED) {
             _currentScreen.value = AppScreen.FEED
             return true
         }
@@ -158,8 +186,8 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
         val raw = imeiSearchInput.value
         val clean = ImeiValidator.clean(raw)
 
-        if (clean.length < 8) {
-            _imeiCheckResult.value = ImeiCheckState.InvalidFormat("رقم IMEI يجب أن يتكون من 14 إلى 15 رقماً على الأقل")
+        if (clean.length < 14) {
+            _imeiCheckResult.value = ImeiCheckState.InvalidFormat("رقم IMEI يتكون من 15 رقماً، تأكد منه بطلب *#06#")
             return
         }
 
@@ -206,8 +234,8 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
         onError: (String) -> Unit
     ) {
         val cleanImei = ImeiValidator.clean(imei1)
-        if (cleanImei.length < 10) {
-            onError("يرجى إدخال رقم IMEI صحيح لا يقل عن 14-15 رقماً")
+        if (cleanImei.length < 14) {
+            onError("يرجى إدخال رقم IMEI صحيح من 15 رقماً")
             return
         }
 
@@ -227,8 +255,8 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
         }
 
         // Admin Security Enforcement: Check if user or phone number is banned
-        if (com.example.util.AdminManager.isBanned(primaryPhone) || 
-            com.example.util.AdminManager.isBanned(whatsappNumber) || 
+        if (com.example.util.AdminManager.isBanned(primaryPhone) ||
+            com.example.util.AdminManager.isBanned(whatsappNumber) ||
             com.example.util.AdminManager.isBanned(contactName)) {
             onError("⛔ هذا الحساب أو رقم الهاتف محظور من قبل المشرف العام (م. هاشم القديمي) لمخالفته شروط وسياسات المنظومة.")
             return

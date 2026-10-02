@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
@@ -26,7 +28,6 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,9 +40,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,17 +52,28 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.AlertEntity
 import com.example.data.model.ReportEntity
 import com.example.ui.theme.AlertRed
-import com.example.ui.theme.AlertRedLight
-import com.example.ui.theme.AlertRedDark
-import com.example.ui.theme.Navy700
-import com.example.ui.theme.Navy800
-import com.example.ui.theme.Navy900
+import com.example.ui.theme.AmberTint
+import com.example.ui.theme.BlueTint
+import com.example.ui.theme.BrandBorder
+import com.example.ui.theme.BrandCyan
+import com.example.ui.theme.BrandInk
+import com.example.ui.theme.BrandSurface
+import com.example.ui.theme.BrandSurfaceHigh
+import com.example.ui.theme.GreenTint
 import com.example.ui.theme.PureWhite
+import com.example.ui.theme.RedTint
 import com.example.ui.theme.SuccessGreen
-import com.example.ui.theme.SuccessGreenLight
+import com.example.ui.theme.TextSecondaryLight
 import com.example.ui.theme.WarningAmber
-import com.example.ui.theme.WarningAmberLight
+import com.example.ui.theme.YemenGold
+import java.text.NumberFormat
 import java.util.Locale
+
+/** Formats numbers with Western digits and thousands separators: 150,000 */
+fun formatAmount(value: Long): String = NumberFormat.getIntegerInstance(Locale.US).format(value)
+
+/** "Samsung (سامسونج)" -> "Samsung" */
+fun shortBrand(brand: String): String = brand.substringBefore(" (").substringBefore(" / ").trim().ifBlank { brand }
 
 @Composable
 fun StatusBadge(
@@ -67,80 +81,46 @@ fun StatusBadge(
     isRecovered: Boolean,
     modifier: Modifier = Modifier
 ) {
-    if (isRecovered) {
-        Surface(
-            color = SuccessGreenLight,
-            shape = RoundedCornerShape(8.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, SuccessGreen.copy(alpha = 0.5f)),
-            modifier = modifier
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = SuccessGreen,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "تم الاسترجاع بحمد الله",
-                    color = SuccessGreen,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    } else {
-        val (bg, text, border, icon, label) = when (reportType) {
-            "STOLEN" -> Tuple5(AlertRedLight, AlertRed, AlertRed.copy(alpha = 0.4f), Icons.Default.Security, "مسروق (بلاغ عاجل)")
-            "LOST" -> Tuple5(WarningAmberLight, Color(0xFFB78103), WarningAmber.copy(alpha = 0.4f), Icons.Default.Warning, "مفقود / ضائع")
-            else -> Tuple5(Color(0xFFE0F2FE), Color(0xFF0369A1), Color(0xFF38BDF8), Icons.Default.PhoneAndroid, "معثور عليه")
-        }
+    val bg: Color
+    val fg: Color
+    val icon: ImageVector
+    val label: String
+    when {
+        isRecovered -> { bg = GreenTint; fg = SuccessGreen; icon = Icons.Default.CheckCircle; label = "تم الاسترجاع" }
+        reportType == "STOLEN" -> { bg = RedTint; fg = Color(0xFFFF8A8E); icon = Icons.Default.Security; label = "مسروق" }
+        reportType == "LOST" -> { bg = AmberTint; fg = WarningAmber; icon = Icons.Default.Warning; label = "مفقود" }
+        else -> { bg = BlueTint; fg = Color(0xFF7CC4FF); icon = Icons.Default.PhoneAndroid; label = "معثور عليه" }
+    }
 
-        Surface(
-            color = bg,
-            shape = RoundedCornerShape(8.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, border),
-            modifier = modifier
+    Surface(
+        color = bg,
+        shape = RoundedCornerShape(50),
+        border = BorderStroke(1.dp, fg.copy(alpha = 0.35f)),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = text,
-                    modifier = Modifier.size(13.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = label,
-                    color = text,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Icon(imageVector = icon, contentDescription = null, tint = fg, modifier = Modifier.size(13.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = label, color = fg, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
-
-private data class Tuple5<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)
 
 @Composable
 fun YemenFlagPill(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .border(0.5.dp, Color.LightGray.copy(alpha = 0.5f), RoundedCornerShape(6.dp)),
-        verticalAlignment = Alignment.CenterVertically
+            .clip(RoundedCornerShape(4.dp))
+            .border(0.5.dp, Color.LightGray.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
     ) {
-        Box(modifier = Modifier.size(width = 6.dp, height = 14.dp).background(Color(0xFFCE1126)))
-        Box(modifier = Modifier.size(width = 6.dp, height = 14.dp).background(Color.White))
-        Box(modifier = Modifier.size(width = 6.dp, height = 14.dp).background(Color(0xFF000000)))
+        Column {
+            Box(modifier = Modifier.size(width = 20.dp, height = 4.5.dp).background(Color(0xFFCE1126)))
+            Box(modifier = Modifier.size(width = 20.dp, height = 4.5.dp).background(Color.White))
+            Box(modifier = Modifier.size(width = 20.dp, height = 4.5.dp).background(Color(0xFF000000)))
+        }
     }
 }
 
@@ -152,49 +132,40 @@ fun StatCard(
     accentColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(18.dp),
+        color = BrandSurface,
+        border = BorderStroke(1.dp, BrandBorder)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(horizontal = 12.dp, vertical = 12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = title,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = accentColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                Icon(imageVector = icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(16.dp))
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = value,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                color = PureWhite
+            )
+            Text(
+                text = title,
+                fontSize = 11.sp,
+                color = TextSecondaryLight,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -207,34 +178,39 @@ fun UrgentAlertTicker(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Only shown when there is something new to read
     AnimatedVisibility(
-        visible = latestAlert != null,
+        visible = latestAlert != null && unreadCount > 0,
         enter = fadeIn(),
         exit = fadeOut(),
         modifier = modifier
     ) {
         if (latestAlert != null) {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (latestAlert.alertType == "URGENT_THEFT") AlertRedDark else Navy800
-                ),
+            val urgent = latestAlert.alertType == "URGENT_THEFT"
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            if (urgent) listOf(Color(0xFF8E1B22), Color(0xFFC62B33))
+                            else listOf(BrandSurfaceHigh, BrandSurface)
+                        )
+                    )
                     .clickable { onClick() }
                     .testTag("urgent_alert_ticker")
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(PureWhite.copy(alpha = 0.2f)),
+                            .background(PureWhite.copy(alpha = 0.18f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -246,36 +222,34 @@ fun UrgentAlertTicker(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "تنبيه فوري لجميع المستخدمين",
-                                color = PureWhite,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            if (unreadCount > 0) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(WarningAmber)
-                                        .padding(horizontal = 6.dp, vertical = 1.dp)
-                                ) {
-                                    Text(
-                                        text = "$unreadCount جديد",
-                                        color = Navy900,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
                         Text(
-                            text = "${latestAlert.title} - ${latestAlert.governorate}",
-                            color = PureWhite.copy(alpha = 0.9f),
+                            text = latestAlert.title,
+                            color = PureWhite,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "📍 ${latestAlert.governorate}",
+                            color = PureWhite.copy(alpha = 0.85f),
                             fontSize = 11.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(YemenGold)
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "$unreadCount جديد",
+                            color = BrandInk,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
                         )
                     }
                 }
@@ -293,106 +267,131 @@ fun ReportItemCard(
     onShareClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val accent = when {
+        report.isRecovered -> SuccessGreen
+        report.reportType == "STOLEN" -> AlertRed
+        report.reportType == "LOST" -> WarningAmber
+        else -> Color(0xFF7CC4FF)
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .testTag("report_item_${report.id}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = BrandSurface),
+        border = BorderStroke(1.dp, BrandBorder)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Header: Status Badge and Time
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                StatusBadge(reportType = report.reportType, isRecovered = report.isRecovered)
-                Text(
-                    text = formatRelativeTime(report.createdAt),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Phone Name & Brand
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.PhoneAndroid,
-                    contentDescription = null,
-                    tint = Navy700,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "${report.brand} ${report.model}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // IMEI and Color
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "IMEI: ${report.maskedImei}",
-                    fontSize = 12.sp,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (report.isStolen) AlertRed else MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "اللون: ${report.color}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Location
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = AlertRed,
-                    modifier = Modifier.size(15.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "${report.governorate} • ${report.incidentLocation}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            // Reward if present
-            if (report.rewardAmount > 0 && !report.isRecovered) {
-                Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.Top) {
+                // Device avatar
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WarningAmberLight)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(accent.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhoneAndroid,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = shortBrand(report.brand),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = YemenGold
+                        )
+                        Text(
+                            text = formatRelativeTime(report.createdAt),
+                            fontSize = 11.sp,
+                            color = TextSecondaryLight
+                        )
+                    }
+                    Text(
+                        text = report.model,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PureWhite,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 21.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    StatusBadge(reportType = report.reportType, isRecovered = report.isRecovered)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Details strip
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = BrandSurfaceHigh.copy(alpha = 0.6f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = BrandCyan, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${report.governorate} • ${report.incidentLocation}",
+                            fontSize = 12.sp,
+                            color = PureWhite.copy(alpha = 0.85f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "IMEI  ${report.maskedImei}",
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = TextSecondaryLight
+                        )
+                        if (report.color.isNotBlank()) {
+                            Text(
+                                text = report.color.substringBefore(" ("),
+                                fontSize = 11.sp,
+                                color = TextSecondaryLight,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (report.rewardAmount > 0 && !report.isRecovered) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(YemenGold.copy(alpha = 0.14f))
+                        .border(1.dp, YemenGold.copy(alpha = 0.4f), RoundedCornerShape(50))
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
                 ) {
                     Text(
-                        text = "💰 مكافأة مالية: ${"%,d".format(report.rewardAmount)} ريال يمني",
-                        color = Color(0xFF8A5A00),
-                        fontSize = 11.sp,
+                        text = "💰 مكافأة ${formatAmount(report.rewardAmount.toLong())} ريال",
+                        color = YemenGold,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -400,90 +399,70 @@ fun ReportItemCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Action Buttons Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Call Button
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onCallClick() }
-                            .testTag("call_button_${report.id}")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Call,
-                                contentDescription = "اتصال",
-                                tint = Navy700,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "اتصال",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Navy700
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // WhatsApp Button
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = SuccessGreenLight,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onWhatsAppClick() }
-                            .testTag("whatsapp_button_${report.id}")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Chat,
-                                contentDescription = "واتساب",
-                                tint = SuccessGreen,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "واتساب",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SuccessGreen
-                            )
-                        }
-                    }
-                }
-
-                // Share Button
+                ActionPill(
+                    icon = Icons.Default.Call,
+                    label = "اتصال",
+                    container = Color(0xFF1E88E5),
+                    tag = "call_button_${report.id}",
+                    modifier = Modifier.weight(1f),
+                    onClick = onCallClick
+                )
+                ActionPill(
+                    icon = Icons.AutoMirrored.Outlined.Chat,
+                    label = "واتساب",
+                    container = SuccessGreen,
+                    tag = "whatsapp_button_${report.id}",
+                    modifier = Modifier.weight(1f),
+                    onClick = onWhatsAppClick
+                )
                 IconButton(
                     onClick = onShareClick,
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(BrandSurfaceHigh)
                         .testTag("share_button_${report.id}")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = "مشاركة",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = PureWhite,
                         modifier = Modifier.size(18.dp)
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ActionPill(
+    icon: ImageVector,
+    label: String,
+    container: Color,
+    tag: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .height(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(container.copy(alpha = 0.16f))
+            .border(1.dp, container.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .testTag(tag)
+    ) {
+        Icon(imageVector = icon, contentDescription = label, tint = container, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(text = label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = container)
     }
 }
 

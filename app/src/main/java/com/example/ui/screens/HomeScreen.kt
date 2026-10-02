@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -14,48 +15,45 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAlert
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Warning
 import com.example.ui.components.InAppNotificationBanner
 import com.example.ui.components.SearchWatchDialog
 import com.example.util.InAppNotificationManager
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -65,6 +63,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,7 +71,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -81,9 +82,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.BuildConfig
 import com.example.R
-import com.example.data.model.ReportEntity
-import com.example.data.model.YemenLocations
 import com.example.ui.components.ReportItemCard
 import com.example.ui.components.StatCard
 import com.example.ui.components.UrgentAlertTicker
@@ -91,14 +91,19 @@ import com.example.ui.components.YemenFlagPill
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.credentials.CredentialManager
 import com.example.data.remote.FirebaseAuthManager
-import com.example.ui.theme.SuccessGreenLight
 import com.example.ui.theme.AlertRed
-import com.example.ui.theme.Navy700
-import com.example.ui.theme.Navy800
-import com.example.ui.theme.Navy900
+import com.example.ui.theme.BrandBg
+import com.example.ui.theme.BrandBorder
+import com.example.ui.theme.BrandCyan
+import com.example.ui.theme.BrandInk
+import com.example.ui.theme.BrandSurface
+import com.example.ui.theme.BrandSurfaceHigh
+import com.example.ui.theme.GreenTint
 import com.example.ui.theme.PureWhite
 import com.example.ui.theme.SuccessGreen
+import com.example.ui.theme.TextSecondaryLight
 import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.YemenGold
 import com.example.ui.viewmodel.AppScreen
 import com.example.ui.viewmodel.PhoneTrackerViewModel
 import com.example.util.IntentHelper
@@ -119,54 +124,52 @@ fun HomeScreen(
     val selectedType by viewModel.filterType.collectAsStateWithLifecycle()
     val selectedGov by viewModel.filterGovernorate.collectAsStateWithLifecycle()
 
-    var showGovDialog by remember { mutableStateOf(false) }
     var showSearchWatchDialog by remember { mutableStateOf(false) }
     val inAppNotification by InAppNotificationManager.currentInAppNotification.collectAsStateWithLifecycle()
     val isSuperAdmin by com.example.util.AdminManager.isSuperAdmin.collectAsStateWithLifecycle()
+    val canSendTest = isSuperAdmin || BuildConfig.DEBUG
 
-    val latestUrgentAlert = alerts.firstOrNull { it.alertType == "URGENT_THEFT" } ?: alerts.firstOrNull()
+    val latestUrgentAlert = alerts.firstOrNull { !it.isRead && it.alertType == "URGENT_THEFT" }
+        ?: alerts.firstOrNull { !it.isRead }
+
+    val listState = rememberLazyListState()
+    val fabExpanded by remember { derivedStateOf { listState.firstVisibleItemIndex < 2 } }
 
     Scaffold(
         modifier = modifier,
+        containerColor = BrandBg,
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(RoundedCornerShape(8.dp)),
+                            modifier = Modifier.size(38.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Security,
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_launcher_foreground),
                                 contentDescription = null,
-                                tint = PureWhite,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.requiredSize(64.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "أمان فون",
-                                    color = PureWhite,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Text("أمان", color = PureWhite, fontSize = 19.sp, fontWeight = FontWeight.Black)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("فون", color = YemenGold, fontSize = 19.sp, fontWeight = FontWeight.Black)
                                 Spacer(modifier = Modifier.width(6.dp))
                                 YemenFlagPill()
                             }
                             Text(
-                                text = "المنظومة الوطنية لحماية وتتبع الهواتف",
-                                color = PureWhite.copy(alpha = 0.8f),
+                                text = "المنظومة الوطنية لحماية الهواتف",
+                                color = TextSecondaryLight,
                                 fontSize = 10.sp
                             )
                         }
                     }
                 },
                 actions = {
-                    // Admin Crown shortcut (Exclusive to Hashem)
                     if (isSuperAdmin) {
                         IconButton(
                             onClick = { viewModel.navigateTo(AppScreen.ADMIN_DASHBOARD) },
@@ -175,75 +178,45 @@ fun HomeScreen(
                             Text("👑", fontSize = 20.sp)
                         }
                     }
-
-                    // Search Watch & FCM In-App Alerts shortcut
                     IconButton(
                         onClick = { showSearchWatchDialog = true },
                         modifier = Modifier.testTag("search_watch_top_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.AddAlert,
-                            contentDescription = "مراقبة المواصفات وتنبيهات FCM",
-                            tint = WarningAmber
+                            contentDescription = "مراقبة المواصفات",
+                            tint = YemenGold
                         )
                     }
-
-                    // Profile / Login shortcut
                     IconButton(
                         onClick = { viewModel.navigateTo(AppScreen.LOGIN) },
                         modifier = Modifier.testTag("account_login_button")
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "تسجيل الدخول وحقوق المطور",
-                            tint = PureWhite
-                        )
-                    }
-                    // Guide for shops & users
-                    IconButton(
-                        onClick = { viewModel.navigateTo(AppScreen.SHOPS_GUIDE) },
-                        modifier = Modifier.testTag("guide_icon_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                            contentDescription = "دليل المحلات",
-                            tint = PureWhite
-                        )
-                    }
-
-                    // Alerts Bell with Badge
-                    IconButton(
-                        onClick = { viewModel.navigateTo(AppScreen.ALERTS) },
-                        modifier = Modifier.testTag("alerts_icon_button")
-                    ) {
-                        BadgedBox(
-                            badge = {
-                                if (unreadCount > 0) {
-                                    Badge(
-                                        containerColor = AlertRed,
-                                        contentColor = PureWhite
-                                    ) {
-                                        Text(text = "$unreadCount")
-                                    }
-                                }
-                            }
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(BrandSurfaceHigh),
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "التنبيهات العاجلة",
-                                tint = PureWhite
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "حسابي",
+                                tint = PureWhite,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Navy800)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBg)
             )
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { viewModel.navigateTo(AppScreen.NEW_REPORT) },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("تقديم بلاغ جديد", fontWeight = FontWeight.Bold) },
+                expanded = fabExpanded,
+                icon = { Icon(Icons.Default.Add, contentDescription = "تقديم بلاغ") },
+                text = { Text("تقديم بلاغ", fontWeight = FontWeight.Bold) },
                 containerColor = AlertRed,
                 contentColor = PureWhite,
                 modifier = Modifier.testTag("new_report_fab")
@@ -256,437 +229,361 @@ fun HomeScreen(
                 .padding(innerPadding)
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-            // 1. Urgent Alert Ticker
-            item {
-                UrgentAlertTicker(
-                    latestAlert = latestUrgentAlert,
-                    unreadCount = unreadCount,
-                    onClick = { viewModel.navigateTo(AppScreen.ALERTS) }
-                )
-            }
-
-            // 1.2. Admin Executive Quick Access Banner (Visible ONLY to Hashem)
-            if (isSuperAdmin) {
+                // 1. Search (primary action, like global apps)
                 item {
-                    Card(
-                        onClick = { viewModel.navigateTo(AppScreen.ADMIN_DASHBOARD) },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Navy800),
-                        border = androidx.compose.foundation.BorderStroke(1.2.dp, WarningAmber),
-                        modifier = Modifier.fillMaxWidth().testTag("admin_quick_card")
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("👑", fontSize = 22.sp)
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text(
-                                        text = "لوحة تحكم المشرف العام (المهندس هاشم القديمي)",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = WarningAmber
-                                    )
-                                    Text(
-                                        text = "صلاحيات كاملة: حذف أي بلاغ، حظر الأرقام، وبث التعاميم",
-                                        fontSize = 10.sp,
-                                        color = PureWhite.copy(alpha = 0.8f)
-                                    )
-                                }
-                            }
-                            Text("لوحة التحكم ←", fontSize = 11.sp, color = WarningAmber, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-
-            // 1.5. Firebase Cloud Sync & Auth Banner
-            item {
-                FirebaseCloudAuthCard(onOpenLogin = { viewModel.navigateTo(AppScreen.LOGIN) })
-            }
-
-            // 2. Statistics Row
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    StatCard(
-                        title = "إجمالي البلاغات",
-                        value = "${stats.totalReports}",
-                        icon = Icons.Default.PhoneAndroid,
-                        accentColor = Navy700,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        title = "سرقات نشطة",
-                        value = "${stats.activeStolen}",
-                        icon = Icons.Default.Security,
-                        accentColor = AlertRed,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        title = "تم استرجاعها",
-                        value = "${stats.recovered}",
-                        icon = Icons.Default.CheckCircle,
-                        accentColor = SuccessGreen,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            // 3. Quick Action Feature Cards
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Check IMEI Quick Button
-                    Card(
-                        onClick = { viewModel.navigateTo(AppScreen.CHECK_IMEI) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("quick_check_imei_card"),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Navy700)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.QrCodeScanner,
-                                contentDescription = null,
-                                tint = WarningAmber,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = "فحص IMEI فوري",
-                                    color = PureWhite,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "قبل شراء أي هاتف",
-                                    color = PureWhite.copy(alpha = 0.8f),
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-                    }
-
-                    // Emergency Broadcast Simulator / Alert Trigger
-                    Card(
-                        onClick = { viewModel.simulateTheftBroadcast() },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("quick_broadcast_alert_card"),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = AlertRed.copy(alpha = 0.12f))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = AlertRed,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = "بث تنبيه تجريبي",
-                                    color = AlertRed,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "تجربة إشعار فوري",
-                                    color = AlertRed.copy(alpha = 0.8f),
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 4. Search Bar with FCM Watch Trigger
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { viewModel.searchQuery.value = it },
-                        placeholder = { Text("ابحث برقم IMEI، الموديل، الموقع، أو الاسم...") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null, tint = Navy700)
-                        },
+                        placeholder = { Text("ابحث برقم IMEI أو الموديل أو المنطقة", fontSize = 13.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = YemenGold) },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "مسح")
+                                    Icon(Icons.Default.Clear, contentDescription = "مسح", tint = TextSecondaryLight)
                                 }
                             }
                         },
                         singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(18.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            focusedContainerColor = BrandSurface,
+                            unfocusedContainerColor = BrandSurface,
+                            focusedBorderColor = YemenGold,
+                            unfocusedBorderColor = BrandBorder,
+                            focusedTextColor = PureWhite,
+                            unfocusedTextColor = PureWhite,
+                            cursorColor = YemenGold
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("search_text_field")
                     )
-
-                    // Quick Action: Watch this search
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Navy800.copy(alpha = 0.5f))
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.NotificationsActive,
-                                contentDescription = null,
-                                tint = WarningAmber,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (searchQuery.isNotBlank()) "تفعيل تنبيه سحابي لبحث: [$searchQuery]" else "مراقبة مواصفات معينة وتنبيهي عند إضافتها (FCM)",
-                                fontSize = 11.sp,
-                                color = PureWhite,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        Button(
-                            onClick = { showSearchWatchDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp).testTag("watch_search_chip_button")
-                        ) {
-                            Text(
-                                text = "تفعيل المراقبة 🔔",
-                                color = Navy900,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                 }
-            }
 
-            // 5. Filter Chips Row
-            item {
-                Column {
-                    // Type Filter Chips
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterChip(
-                            selected = selectedType == null,
-                            onClick = { viewModel.filterType.value = null },
-                            label = { Text("جميع البلاغات") },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Navy700,
-                                selectedLabelColor = PureWhite
-                            ),
-                            modifier = Modifier.testTag("filter_all")
-                        )
-                        FilterChip(
-                            selected = selectedType == "STOLEN",
-                            onClick = {
-                                viewModel.filterType.value = if (selectedType == "STOLEN") null else "STOLEN"
-                            },
-                            label = { Text("مسروقة 🚨") },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AlertRed,
-                                selectedLabelColor = PureWhite
-                            ),
-                            modifier = Modifier.testTag("filter_stolen")
-                        )
-                        FilterChip(
-                            selected = selectedType == "LOST",
-                            onClick = {
-                                viewModel.filterType.value = if (selectedType == "LOST") null else "LOST"
-                            },
-                            label = { Text("مفقودة ⚠️") },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = WarningAmber,
-                                selectedLabelColor = Navy900
-                            ),
-                            modifier = Modifier.testTag("filter_lost")
-                        )
-                        FilterChip(
-                            selected = selectedType == "FOUND",
-                            onClick = {
-                                viewModel.filterType.value = if (selectedType == "FOUND") null else "FOUND"
-                            },
-                            label = { Text("معثور عليها 📱") },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = SuccessGreen,
-                                selectedLabelColor = PureWhite
-                            ),
-                            modifier = Modifier.testTag("filter_found")
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Governorate selection chip scroll
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "المحافظة:",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        FilterChip(
-                            selected = selectedGov == null,
-                            onClick = { viewModel.filterGovernorate.value = null },
-                            label = { Text("كل محافظات اليمن") }
-                        )
-                        listOf("صنعاء (الأمانة)", "عدن", "تعز", "الحديدة", "إب", "حضرموت (المكلا)", "مأرب").forEach { gov ->
-                            FilterChip(
-                                selected = selectedGov == gov,
-                                onClick = {
-                                    viewModel.filterGovernorate.value = if (selectedGov == gov) null else gov
-                                },
-                                label = { Text(gov) }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 6. Section Header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "آخر بلاغات الأجهزة المفقودة والمسروقة (${reports.size})",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                // 2. Urgent ticker (only when there is something unread)
+                item {
+                    UrgentAlertTicker(
+                        latestAlert = latestUrgentAlert,
+                        unreadCount = unreadCount,
+                        onClick = { viewModel.navigateTo(AppScreen.ALERTS) }
                     )
                 }
-            }
 
-            // 7. Empty State or Reports List
-            if (reports.isEmpty()) {
+                // 3. Hero: IMEI check
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(Color(0xFF14365C), Color(0xFF0D2138))
+                                )
+                            )
+                            .testTag("quick_check_imei_card")
                     ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("ناوي تشتري جوال؟", color = YemenGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text("افحص رقم IMEI في ثواني", color = PureWhite, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                                Text("تأكد إن الجهاز مو مبلّغ عنه مسروق أو مفقود", color = TextSecondaryLight, fontSize = 11.sp)
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Button(
+                                    onClick = { viewModel.navigateTo(AppScreen.CHECK_IMEI) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = YemenGold),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                                    modifier = Modifier.height(40.dp)
+                                ) {
+                                    Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = BrandInk, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("افحص الآن", color = BrandInk, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(76.dp)
+                                    .clip(CircleShape)
+                                    .background(YemenGold.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = YemenGold, modifier = Modifier.size(40.dp))
+                            }
+                        }
+                    }
+                }
+
+                // 4. Stats
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        StatCard(
+                            title = "إجمالي البلاغات",
+                            value = "${stats.totalReports}",
+                            icon = Icons.Default.PhoneAndroid,
+                            accentColor = BrandCyan,
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatCard(
+                            title = "سرقات نشطة",
+                            value = "${stats.activeStolen}",
+                            icon = Icons.Default.Security,
+                            accentColor = AlertRed,
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatCard(
+                            title = "تم استرجاعها",
+                            value = "${stats.recovered}",
+                            icon = Icons.Default.CheckCircle,
+                            accentColor = SuccessGreen,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // 5. Account / cloud sync
+                item {
+                    FirebaseCloudAuthCard(onOpenLogin = { viewModel.navigateTo(AppScreen.LOGIN) })
+                }
+
+                // 6. Admin shortcut + test broadcast (admin / debug only)
+                if (isSuperAdmin) {
+                    item {
+                        QuickRow(
+                            icon = null,
+                            emoji = "👑",
+                            title = "لوحة تحكم المشرف العام",
+                            subtitle = "إدارة البلاغات والحظر والتعاميم",
+                            accent = YemenGold,
+                            tag = "admin_quick_card"
+                        ) { viewModel.navigateTo(AppScreen.ADMIN_DASHBOARD) }
+                    }
+                }
+                if (canSendTest) {
+                    item {
+                        QuickRow(
+                            icon = Icons.Default.Campaign,
+                            title = "إشعار تجريبي",
+                            subtitle = "للمشرف فقط • لا يُنشر للمستخدمين",
+                            accent = AlertRed,
+                            tag = "quick_broadcast_alert_card"
+                        ) { viewModel.simulateTheftBroadcast() }
+                    }
+                }
+
+                // 7. Watch search (FCM)
+                item {
+                    QuickRow(
+                        icon = Icons.Default.NotificationsActive,
+                        title = if (searchQuery.isNotBlank()) "نبّهني عند ظهور: $searchQuery" else "راقب جهازاً معيّناً",
+                        subtitle = "ننبهك أول ما يُضاف بلاغ مطابق للمواصفات",
+                        accent = BrandCyan,
+                        tag = "watch_search_chip_button"
+                    ) { showSearchWatchDialog = true }
+                }
+
+                // 8. Filters
+                item {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            BrandChip("الكل", selectedType == null, "filter_all") { viewModel.filterType.value = null }
+                            BrandChip("مسروقة", selectedType == "STOLEN", "filter_stolen", AlertRed) {
+                                viewModel.filterType.value = if (selectedType == "STOLEN") null else "STOLEN"
+                            }
+                            BrandChip("مفقودة", selectedType == "LOST", "filter_lost", WarningAmber) {
+                                viewModel.filterType.value = if (selectedType == "LOST") null else "LOST"
+                            }
+                            BrandChip("معثور عليها", selectedType == "FOUND", "filter_found", SuccessGreen) {
+                                viewModel.filterType.value = if (selectedType == "FOUND") null else "FOUND"
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            BrandChip("كل المحافظات", selectedGov == null, "filter_gov_all") { viewModel.filterGovernorate.value = null }
+                            listOf("صنعاء (الأمانة)", "عدن", "تعز", "الحديدة", "إب", "حضرموت (المكلا)", "مأرب").forEach { gov ->
+                                BrandChip(gov.substringBefore(" ("), selectedGov == gov, "filter_gov_$gov") {
+                                    viewModel.filterGovernorate.value = if (selectedGov == gov) null else gov
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 9. Section header
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "آخر البلاغات",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Black,
+                            color = PureWhite
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(BrandSurfaceHigh)
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text("${reports.size}", color = YemenGold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                // 10. Reports
+                if (reports.isEmpty()) {
+                    item {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(32.dp),
+                                .padding(vertical = 40.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(48.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(BrandSurfaceHigh),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Search, contentDescription = null, tint = YemenGold, modifier = Modifier.size(34.dp))
+                            }
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "لا توجد بلاغات مطابقة لبحثك",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "جرب تغيير معايير البحث أو اختيار محافظة أخرى",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Text("لا توجد بلاغات مطابقة", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                            Text("غيّر البحث أو الفلاتر وحاول مرة ثانية", fontSize = 12.sp, color = TextSecondaryLight)
                         }
                     }
-                }
-            } else {
-                items(reports, key = { it.id }) { report ->
-                    ReportItemCard(
-                        report = report,
-                        onClick = { viewModel.openReportDetails(report.id) },
-                        onCallClick = { IntentHelper.makeCall(context, report.primaryPhone) },
-                        onWhatsAppClick = {
-                            val msg = "السلام عليكم، بخصوص بلاغ الهاتف ${report.brand} ${report.model} في تطبيق أمان فون..."
-                            IntentHelper.openWhatsApp(context, report.whatsappNumber, msg)
-                        },
-                        onShareClick = { IntentHelper.shareReport(context, report) }
-                    )
+                } else {
+                    items(reports, key = { it.id }) { report ->
+                        ReportItemCard(
+                            report = report,
+                            onClick = { viewModel.openReportDetails(report.id) },
+                            onCallClick = { IntentHelper.makeCall(context, report.primaryPhone) },
+                            onWhatsAppClick = {
+                                val msg = "السلام عليكم، بخصوص بلاغ الهاتف ${report.brand} ${report.model} في تطبيق أمان فون..."
+                                IntentHelper.openWhatsApp(context, report.whatsappNumber, msg)
+                            },
+                            onShareClick = { IntentHelper.shareReport(context, report) }
+                        )
+                    }
                 }
             }
 
-            // Bottom Spacing for FAB
-            item {
-                Spacer(modifier = Modifier.height(64.dp))
-            }
+            InAppNotificationBanner(
+                notification = inAppNotification,
+                onDismiss = { InAppNotificationManager.dismissCurrent() },
+                onOpenReport = { reportId -> viewModel.openReportDetails(reportId) },
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
 
-        // Floating in-app notification banner at top of screen
-        InAppNotificationBanner(
-            notification = inAppNotification,
-            onDismiss = { InAppNotificationManager.dismissCurrent() },
-            onOpenReport = { reportId -> viewModel.openReportDetails(reportId) },
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
-    }
-
-    if (showSearchWatchDialog) {
-        SearchWatchDialog(
-            initialSearchQuery = searchQuery,
-            onDismiss = { showSearchWatchDialog = false }
-        )
+        if (showSearchWatchDialog) {
+            SearchWatchDialog(
+                initialSearchQuery = searchQuery,
+                onDismiss = { showSearchWatchDialog = false }
+            )
+        }
     }
 }
+
+@Composable
+private fun QuickRow(
+    icon: ImageVector?,
+    title: String,
+    subtitle: String,
+    accent: Color,
+    tag: String,
+    emoji: String? = null,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = BrandSurface,
+        border = BorderStroke(1.dp, BrandBorder),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(tag)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (icon != null) {
+                    Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+                } else if (emoji != null) {
+                    Text(emoji, fontSize = 18.sp)
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, color = PureWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, color = TextSecondaryLight, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Text("←", color = accent, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BrandChip(
+    label: String,
+    selected: Boolean,
+    tag: String,
+    accent: Color = YemenGold,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+        shape = RoundedCornerShape(50),
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = BrandSurface,
+            labelColor = PureWhite.copy(alpha = 0.8f),
+            selectedContainerColor = accent,
+            selectedLabelColor = BrandInk
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = BrandBorder,
+            selectedBorderColor = accent
+        ),
+        modifier = Modifier.testTag(tag)
+    )
 }
 
 /** How the current Firebase user signed in. */
@@ -724,20 +621,13 @@ fun FirebaseCloudAuthCard(
     val credentialManager = remember { CredentialManager.create(context) }
     val currentUser by FirebaseAuthManager.currentUser.collectAsStateWithLifecycle()
 
-    val darkGreen = Color(0xFF0B4D2C)
-
-    Card(
+    val user = currentUser
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (currentUser != null) SuccessGreenLight else Navy700.copy(alpha = 0.08f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (currentUser != null) SuccessGreen.copy(alpha = 0.4f) else Navy700.copy(alpha = 0.2f)
-        )
+        shape = RoundedCornerShape(18.dp),
+        color = if (user != null) GreenTint else BrandSurface,
+        border = BorderStroke(1.dp, if (user != null) SuccessGreen.copy(alpha = 0.45f) else BrandBorder)
     ) {
-        val user = currentUser
         if (user != null) {
             val method = user.signInMethod()
             val title: String
@@ -745,23 +635,15 @@ fun FirebaseCloudAuthCard(
             when (method) {
                 SignInMethod.GOOGLE -> {
                     title = user.displayName?.takeIf { it.isNotBlank() } ?: user.email ?: "حساب Google"
-                    subtitle = if (!user.displayName.isNullOrBlank() && !user.email.isNullOrBlank()) {
-                        "دخول عبر Google • ${user.email}"
-                    } else {
-                        "دخول عبر Google"
-                    }
+                    subtitle = if (!user.displayName.isNullOrBlank() && !user.email.isNullOrBlank()) "Google • ${user.email}" else "دخول عبر Google"
                 }
                 SignInMethod.EMAIL -> {
                     title = user.email ?: "حساب بريد إلكتروني"
-                    subtitle = if (user.isEmailVerified) {
-                        "دخول بالبريد الإلكتروني • مفعّل ✅"
-                    } else {
-                        "دخول بالبريد • بانتظار تفعيل البريد ⚠️"
-                    }
+                    subtitle = if (user.isEmailVerified) "البريد الإلكتروني • مفعّل ✅" else "البريد • بانتظار التفعيل ⚠️"
                 }
                 SignInMethod.PHONE -> {
                     title = formatYemeniPhone(user.phoneNumber).ifBlank { "رقم هاتف موثّق" }
-                    subtitle = "دخول برقم الهاتف • موثّق برمز SMS"
+                    subtitle = "رقم الهاتف • موثّق برمز SMS"
                 }
                 SignInMethod.OTHER -> {
                     title = user.displayName ?: "مستخدم أمان فون"
@@ -773,82 +655,37 @@ fun FirebaseCloudAuthCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(if (method == SignInMethod.GOOGLE) PureWhite else SuccessGreen),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(if (method == SignInMethod.GOOGLE) PureWhite else SuccessGreen),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        when (method) {
-                            SignInMethod.GOOGLE -> Image(
-                                painter = painterResource(id = R.drawable.ic_google_logo),
-                                contentDescription = "Google",
-                                modifier = Modifier.size(20.dp)
-                            )
-                            SignInMethod.EMAIL -> Icon(
-                                imageVector = Icons.Default.Email,
-                                contentDescription = null,
-                                tint = PureWhite,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            SignInMethod.PHONE -> Icon(
-                                imageVector = Icons.Default.Phone,
-                                contentDescription = null,
-                                tint = PureWhite,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            SignInMethod.OTHER -> Icon(
-                                imageVector = Icons.Default.CloudDone,
-                                contentDescription = null,
-                                tint = PureWhite,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = title,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = darkGreen,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    when (method) {
+                        SignInMethod.GOOGLE -> Image(
+                            painter = painterResource(id = R.drawable.ic_google_logo),
+                            contentDescription = "Google",
+                            modifier = Modifier.size(20.dp)
                         )
-                        Text(
-                            text = subtitle,
-                            fontSize = 10.sp,
-                            color = darkGreen.copy(alpha = 0.8f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CloudDone,
-                                contentDescription = null,
-                                tint = SuccessGreen,
-                                modifier = Modifier.size(11.dp)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = "متصل بسحابة Firebase والمزامنة نشطة",
-                                fontSize = 9.5.sp,
-                                color = SuccessGreen
-                            )
-                        }
+                        SignInMethod.EMAIL -> Icon(Icons.Default.Email, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
+                        SignInMethod.PHONE -> Icon(Icons.Default.Phone, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
+                        SignInMethod.OTHER -> Icon(Icons.Default.CloudDone, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
                     }
                 }
-
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = PureWhite, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(subtitle, fontSize = 11.sp, color = PureWhite.copy(alpha = 0.75f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CloudDone, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(12.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("المزامنة السحابية نشطة", fontSize = 10.sp, color = SuccessGreen, fontWeight = FontWeight.Bold)
+                    }
+                }
                 Spacer(modifier = Modifier.width(8.dp))
-
                 OutlinedButton(
                     onClick = {
                         FirebaseAuthManager.signOut(
@@ -860,12 +697,12 @@ fun FirebaseCloudAuthCard(
                             scope = coroutineScope
                         )
                     },
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, darkGreen.copy(alpha = 0.5f)),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                    modifier = Modifier.height(32.dp).testTag("sign_out_button")
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, PureWhite.copy(alpha = 0.3f)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                    modifier = Modifier.height(34.dp).testTag("sign_out_button")
                 ) {
-                    Text("خروج", fontSize = 11.sp, color = darkGreen, fontWeight = FontWeight.Bold)
+                    Text("خروج", fontSize = 12.sp, color = PureWhite, fontWeight = FontWeight.Bold)
                 }
             }
         } else {
@@ -873,51 +710,30 @@ fun FirebaseCloudAuthCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(YemenGold.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Navy700.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudSync,
-                            contentDescription = null,
-                            tint = Navy700,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "مزامنة سحابية فورية (Firebase)",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "سجّل الدخول بـ Google أو البريد أو الهاتف لمزامنة البلاغات",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Icon(Icons.Default.CloudSync, contentDescription = null, tint = YemenGold, modifier = Modifier.size(20.dp))
                 }
-
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("سجّل دخولك لمزامنة بلاغاتك", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = PureWhite)
+                    Text("Google أو البريد أو رقم الهاتف", fontSize = 11.sp, color = TextSecondaryLight)
+                }
                 Button(
                     onClick = onOpenLogin,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                    modifier = Modifier.height(34.dp).testTag("google_sign_in_button")
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = YemenGold),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                    modifier = Modifier.height(36.dp).testTag("google_sign_in_button")
                 ) {
-                    Text("تسجيل الدخول", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Navy900)
+                    Text("دخول", fontSize = 12.sp, fontWeight = FontWeight.Black, color = BrandInk)
                 }
             }
         }
