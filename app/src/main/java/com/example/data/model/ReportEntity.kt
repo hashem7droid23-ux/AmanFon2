@@ -1,13 +1,13 @@
 package com.example.data.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "phone_reports")
+@Entity(tableName = "phone_reports", indices = [Index(value = ["cloudId"], unique = true)])
 data class ReportEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val reportType: String, // STOLEN, LOST, FOUND
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val reportType: String,
     val brand: String,
     val model: String,
     val imei1: String,
@@ -22,28 +22,19 @@ data class ReportEntity(
     val contactName: String,
     val primaryPhone: String,
     val whatsappNumber: String,
-    val rewardAmount: Long = 0, // YER
+    val rewardAmount: Long = 0,
     val policeReportNumber: String = "",
     val isRecovered: Boolean = false,
     val additionalNotes: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val cloudId: String? = null,
+    val userId: String = "",
+    val isDemo: Boolean = false
 ) {
-    val isStolen: Boolean
-        get() = reportType == "STOLEN"
-
-    val isLost: Boolean
-        get() = reportType == "LOST"
-
-    val isFound: Boolean
-        get() = reportType == "FOUND"
-
-    val maskedImei: String
-        get() = if (imei1.length >= 8) {
-            val prefix = imei1.take(4)
-            val suffix = imei1.takeLast(3)
-            val maskedCount = (imei1.length - 7).coerceAtLeast(3)
-            prefix + "*".repeat(maskedCount) + suffix
-        } else {
-            imei1
-        }
+    val isStolen get() = reportType == "STOLEN"
+    val isLost get() = reportType == "LOST"
+    val isFound get() = reportType == "FOUND"
+    val maskedImei: String get() = if (imei1.length >= 8) {
+        imei1.take(4) + "*".repeat((imei1.length - 7).coerceAtLeast(3)) + imei1.takeLast(3)
+    } else imei1
 }
