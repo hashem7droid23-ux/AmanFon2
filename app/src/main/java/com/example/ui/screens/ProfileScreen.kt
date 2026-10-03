@@ -52,6 +52,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.material.icons.filled.MarkEmailUnread
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import com.example.ui.theme.AmberTint
+import com.example.ui.theme.WarningAmber
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -202,6 +211,11 @@ fun ProfileScreen(
                 }
             }
 
+            // ===== Email verification =====
+            if (u != null && !isGoogle && !isPhone && !u.email.isNullOrBlank() && !u.isEmailVerified) {
+                EmailVerifyCard(email = u.email!!)
+            }
+
             // ===== My reports =====
             if (u != null && myDigits != null && myDigits.length == 9) {
                 Text("بلاغاتي (${myReports.size})", color = PureWhite, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
@@ -307,5 +321,82 @@ private fun MenuRow(icon: ImageVector, title: String, tint: Color, tag: String, 
         Spacer(Modifier.width(12.dp))
         Text(title, color = PureWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         Text("←", color = TextSecondaryLight, fontSize = 16.sp)
+    }
+}
+
+@Composable
+private fun EmailVerifyCard(email: String) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var cooldown by remember { mutableIntStateOf(0) }
+    var sending by remember { mutableStateOf(false) }
+    var checking by remember { mutableStateOf(false) }
+
+    LaunchedEffect(cooldown) {
+        if (cooldown > 0) { delay(1000); cooldown-- }
+    }
+
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = AmberTint,
+        border = BorderStroke(1.dp, WarningAmber.copy(alpha = 0.6f)),
+        modifier = Modifier.fillMaxWidth().testTag("email_verify_card")
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.MarkEmailUnread, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("فعّل بريدك الإلكتروني", color = PureWhite, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+            }
+            Text(
+                "أرسلنا رابط التفعيل إلى $email من noreply. إذا ما لقيته في البريد الوارد، تفقد مجلد Spam (الرسائل غير المرغوب فيها) وتبويب العروض/Promotions.",
+                color = PureWhite.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 19.sp
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        sending = true
+                        scope.launch {
+                            val r = FirebaseAuthManager.resendVerificationEmail()
+                            sending = false
+                            if (r.isSuccess) {
+                                cooldown = 60
+                                Toast.makeText(context, "تم إرسال رابط التفعيل ✅ تفقد بريدك", Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(context, r.exceptionOrNull()?.message ?: "تعذر الإرسال", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
+                    enabled = !sending && cooldown == 0,
+                    colors = ButtonDefaults.buttonColors(containerColor = WarningAmber, contentColor = BrandInk),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f).height(46.dp).testTag("resend_verification_button")
+                ) {
+                    if (sending) CircularProgressIndicator(color = BrandInk, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                    else Text(if (cooldown > 0) "أعد الإرسال بعد $cooldown" else "إرسال رابط التفعيل", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+                OutlinedButton(
+                    onClick = {
+                        checking = true
+                        scope.launch {
+                            val ok = FirebaseAuthManager.refreshUser()
+                            checking = false
+                            Toast.makeText(
+                                context,
+                                if (ok) "تم تفعيل بريدك بنجاح ✅" else "لسه ما تفعّل، افتح الرابط من بريدك أولاً",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    },
+                    enabled = !checking,
+                    border = BorderStroke(1.dp, PureWhite.copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f).height(46.dp).testTag("check_verification_button")
+                ) {
+                    if (checking) CircularProgressIndicator(color = PureWhite, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                    else Text("فعّلته، تحقق", color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+        }
     }
 }
