@@ -4,12 +4,14 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,23 +29,21 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.VerifiedUser
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -54,34 +55,69 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.ReportEntity
+import com.example.data.remote.AdminCloud
+import com.example.ui.components.StatusBadge
+import com.example.ui.components.formatRelativeTime
+import com.example.ui.components.shortBrand
 import com.example.ui.theme.AlertRed
-import com.example.ui.theme.AlertRedLight
-import com.example.ui.theme.Navy700
-import com.example.ui.theme.Navy800
-import com.example.ui.theme.Navy900
+import com.example.ui.theme.BrandBg
+import com.example.ui.theme.BrandBorder
+import com.example.ui.theme.BrandCyan
+import com.example.ui.theme.BrandInk
+import com.example.ui.theme.BrandSurface
+import com.example.ui.theme.BrandSurfaceHigh
 import com.example.ui.theme.PureWhite
 import com.example.ui.theme.SuccessGreen
+import com.example.ui.theme.TextSecondaryLight
 import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.YemenGold
 import com.example.ui.viewmodel.PhoneTrackerViewModel
 import com.example.util.AdminManager
+import kotlinx.coroutines.launch
+
+private data class AdminTab(val title: String, val ownerOnly: Boolean = false)
+
+private val ADMIN_TABS = listOf(
+    AdminTab("نظرة عامة"),
+    AdminTab("البلاغات"),
+    AdminTab("الحظر"),
+    AdminTab("التعاميم"),
+    AdminTab("الفريق", ownerOnly = true),
+    AdminTab("التحكم"),
+    AdminTab("السجل")
+)
+
+@Composable
+private fun adminFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = YemenGold,
+    unfocusedBorderColor = BrandBorder,
+    focusedLabelColor = YemenGold,
+    unfocusedLabelColor = TextSecondaryLight,
+    focusedTextColor = PureWhite,
+    unfocusedTextColor = PureWhite,
+    cursorColor = YemenGold,
+    focusedContainerColor = BrandBg,
+    unfocusedContainerColor = BrandBg
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,737 +128,623 @@ fun AdminDashboardScreen(
 ) {
     BackHandler { onBack() }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val allReports by viewModel.allReports.collectAsStateWithLifecycle(initialValue = emptyList())
-    val bannedAccounts by AdminManager.bannedAccounts.collectAsState()
-    val isSuperAdmin by AdminManager.isSuperAdmin.collectAsState()
+    val bans by AdminManager.bannedAccounts.collectAsStateWithLifecycle()
+    val isAdmin by AdminManager.isAdmin.collectAsStateWithLifecycle()
+    val isOwner by AdminManager.isOwner.collectAsStateWithLifecycle()
+    val config by AdminCloud.config.collectAsStateWithLifecycle()
+    val logs by AdminCloud.logs.collectAsStateWithLifecycle()
 
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = ADMIN_TABS.filter { !it.ownerOnly || isOwner }
+    var tab by remember { mutableIntStateOf(0) }
+    if (tab >= tabs.size) tab = 0
+
     var reportToDelete by remember { mutableStateOf<ReportEntity?>(null) }
-    var userToBan by remember { mutableStateOf<Pair<String, String>?>(null) } // identifier to reason
+    var banTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    fun toastResult(r: Result<Unit>, ok: String) {
+        Toast.makeText(context, if (r.isSuccess) ok else (r.exceptionOrNull()?.message ?: "تعذر التنفيذ"), Toast.LENGTH_LONG).show()
+    }
+    fun launchOp(ok: String, block: suspend () -> Result<Unit>) {
+        scope.launch { toastResult(block(), ok) }
+    }
 
     Scaffold(
         modifier = modifier,
+        containerColor = BrandBg,
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "👑 لوحة تحكم المشرف العام",
-                            color = PureWhite,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
+            Column(Modifier.background(BrandBg)) {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text("لوحة الإدارة", color = PureWhite, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(
+                                if (isOwner) "المشرف العام • صلاحيات كاملة" else if (isAdmin) "مشرف • صلاحيات الرقابة" else "لا توجد صلاحية",
+                                color = if (isAdmin) YemenGold else AlertRed, fontSize = 11.sp
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack, modifier = Modifier.testTag("admin_back_button")) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع", tint = PureWhite)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBg)
+                )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    tabs.forEachIndexed { i, t ->
+                        FilterChip(
+                            selected = tab == i,
+                            onClick = { tab = i },
+                            label = { Text(t.title, fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                            shape = RoundedCornerShape(50),
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = BrandSurface,
+                                labelColor = PureWhite.copy(alpha = 0.8f),
+                                selectedContainerColor = YemenGold,
+                                selectedLabelColor = BrandInk
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true, selected = tab == i,
+                                borderColor = BrandBorder, selectedBorderColor = YemenGold
+                            ),
+                            modifier = Modifier.testTag("admin_tab_$i")
                         )
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack, modifier = Modifier.testTag("admin_back_button")) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع",
-                            tint = PureWhite
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Navy900)
-            )
+                }
+            }
         }
     ) { innerPadding ->
+        if (!isAdmin) {
+            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                Text("هذه الصفحة للمشرفين فقط", color = TextSecondaryLight)
+            }
+            return@Scaffold
+        }
+
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 1. Executive Admin Verification Banner
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Navy800),
-                    border = BorderStroke(
-                        1.5.dp,
-                        Brush.horizontalGradient(listOf(WarningAmber, SuccessGreen, WarningAmber))
-                    ),
-                    modifier = Modifier.fillMaxWidth().testTag("admin_identity_card")
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Navy700.copy(alpha = 0.5f), Navy900)
-                                )
-                            )
-                            .padding(16.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(CircleShape)
-                                    .background(WarningAmber.copy(alpha = 0.25f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("👑", fontSize = 24.sp)
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "المهندس المصمم: هاشم القديمي",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = PureWhite
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.VerifiedUser,
-                                        contentDescription = "مشرف موثق",
-                                        tint = SuccessGreen,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                                Text(
-                                    text = AdminManager.SUPER_ADMIN_EMAIL,
-                                    fontSize = 12.sp,
-                                    color = WarningAmber,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = "حساب المشرف العام والمسؤول عن إدارة البلاغات والمستخدمين",
-                                    fontSize = 10.sp,
-                                    color = PureWhite.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
+            when (tabs[tab].title) {
+                "نظرة عامة" -> item { OverviewTab(allReports, bans.size, config) }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Stats summary pills
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Navy800,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text("إجمالي البلاغات", fontSize = 10.sp, color = PureWhite.copy(alpha = 0.7f))
-                                    Text("${allReports.size}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = PureWhite)
-                                }
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Navy800,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text("الحسابات المحظورة", fontSize = 10.sp, color = AlertRed)
-                                    Text("${bannedAccounts.size}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AlertRed)
-                                }
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Navy800,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text("صلاحية المشرف", fontSize = 10.sp, color = SuccessGreen)
-                                    Text(if (isSuperAdmin) "مفعلة ✅" else "غير نشطة", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SuccessGreen)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 2. Tab Navigation
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedTabIndex == 0,
-                        onClick = { selectedTabIndex = 0 },
-                        label = { Text("الرقابة على البلاغات", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = WarningAmber,
-                            selectedLabelColor = Navy900,
-                            containerColor = Navy800,
-                            labelColor = PureWhite
-                        ),
-                        modifier = Modifier.weight(1f).testTag("tab_supervise_reports")
-                    )
-                    FilterChip(
-                        selected = selectedTabIndex == 1,
-                        onClick = { selectedTabIndex = 1 },
-                        label = { Text("الحسابات المحظورة (${bannedAccounts.size})", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AlertRed,
-                            selectedLabelColor = PureWhite,
-                            containerColor = Navy800,
-                            labelColor = PureWhite
-                        ),
-                        modifier = Modifier.weight(1.2f).testTag("tab_banned_accounts")
-                    )
-                    FilterChip(
-                        selected = selectedTabIndex == 2,
-                        onClick = { selectedTabIndex = 2 },
-                        label = { Text("بث تعميم رسمي", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = SuccessGreen,
-                            selectedLabelColor = PureWhite,
-                            containerColor = Navy800,
-                            labelColor = PureWhite
-                        ),
-                        modifier = Modifier.weight(1.1f).testTag("tab_broadcast_supervisor")
-                    )
-                }
-            }
-
-            // 3. Tab Contents
-            when (selectedTabIndex) {
-                0 -> {
-                    // TAB 0: Supervise & Manage Reports
+                "البلاغات" -> {
                     item {
-                        Text(
-                            text = "جميع البلاغات المسجلة في المنظومة (تحكم وحذف كامل للمشرف):",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = WarningAmber
-                        )
-                    }
-
-                    if (allReports.isEmpty()) {
-                        item {
-                            Card(
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Navy800),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Box(modifier = Modifier.padding(24.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                    Text("لا توجد بلاغات مسجلة حالياً", color = PureWhite.copy(alpha = 0.7f), fontSize = 13.sp)
-                                }
-                            }
-                        }
-                    } else {
-                        items(allReports, key = { it.id }) { report ->
-                            AdminReportSupervisionCard(
-                                report = report,
-                                onDelete = { reportToDelete = report },
-                                onBanOwner = {
-                                    userToBan = Pair(report.primaryPhone, "مخالفة في البلاغ #${report.id} (${report.brand} ${report.model})")
-                                },
-                                onToggleRecovered = {
-                                    viewModel.toggleRecovered(report.id, !report.isRecovered)
-                                    Toast.makeText(context, "تم تحديث حالة البلاغ كمشرف", Toast.LENGTH_SHORT).show()
-                                },
-                                onOpenDetails = { viewModel.openReportDetails(report.id) }
-                            )
-                        }
-                    }
-                }
-
-                1 -> {
-                    // TAB 1: Banned Accounts & Phone Numbers
-                    item {
-                        AdminBannedAccountsSection(
-                            bannedList = bannedAccounts,
-                            onBanNew = { identifier, reason ->
-                                AdminManager.banAccount(identifier, reason)
-                                Toast.makeText(context, "تم إدراج [$identifier] في قائمة الحظر بنجاح 🚫", Toast.LENGTH_SHORT).show()
+                        ReportsAdminList(
+                            reports = allReports,
+                            config = config,
+                            onOpen = { viewModel.openReportDetails(it.id) },
+                            onToggleRecovered = { r ->
+                                viewModel.toggleRecovered(r.id, !r.isRecovered)
+                                scope.launch { AdminCloud.log(if (r.isRecovered) "إلغاء الاسترجاع" else "توثيق استرجاع", "#${r.id} ${r.model}") }
+                                Toast.makeText(context, "تم تحديث الحالة", Toast.LENGTH_SHORT).show()
                             },
-                            onUnban = { id, identifier ->
-                                AdminManager.unbanAccount(id)
-                                Toast.makeText(context, "تم فك الحظر عن [$identifier] بنجاح ✅", Toast.LENGTH_SHORT).show()
-                            }
+                            onHide = { r, hide -> launchOp(if (hide) "تم إخفاء البلاغ عن المستخدمين" else "تم إظهار البلاغ") { AdminCloud.setHidden(r.imei1, hide, "#${r.id} ${r.model}") } },
+                            onPin = { r, pin -> launchOp(if (pin) "تم تثبيت البلاغ أعلى التطبيق 📌" else "تم إلغاء التثبيت") { AdminCloud.setPinned(if (pin) r.imei1 else "", "#${r.id} ${r.model}") } },
+                            onBan = { r -> banTarget = r.primaryPhone to "مخالفة في البلاغ #${r.id} (${shortBrand(r.brand)} ${r.model})" },
+                            onDelete = { reportToDelete = it }
                         )
                     }
                 }
 
-                2 -> {
-                    // TAB 2: Supervisor Broadcast Announcement
-                    item {
-                        AdminSupervisorBroadcastSection(
-                            onSendBroadcast = { title, msg, isUrgent ->
-                                viewModel.sendSupervisorBroadcast(title, msg, isUrgent, context)
-                                Toast.makeText(context, "تم إرسال التعميم السحابي لكافة المستخدمين بنجاح! 📢", Toast.LENGTH_LONG).show()
+                "الحظر" -> item {
+                    BansTab(
+                        bans = bans,
+                        onBan = { id, reason -> banTarget = id to reason },
+                        onUnban = { b ->
+                            AdminManager.unbanAccount(b.id) { ok, err ->
+                                scope.launch { Toast.makeText(context, if (ok) "تم فك الحظر عن ${b.identifier} ✅" else (err ?: "تعذر"), Toast.LENGTH_SHORT).show() }
                             }
-                        )
+                        }
+                    )
+                }
+
+                "التعاميم" -> item {
+                    BroadcastTab(onSend = { title, msg, urgent ->
+                        viewModel.sendSupervisorBroadcast(title, msg, urgent, context)
+                        Toast.makeText(context, "تم بث التعميم 📢", Toast.LENGTH_LONG).show()
+                    })
+                }
+
+                "الفريق" -> item {
+                    TeamTab(
+                        moderators = config.moderators,
+                        onAdd = { email -> launchOp("تمت إضافة $email كمشرف ✅") { AdminCloud.addModerator(email) } },
+                        onRemove = { email -> launchOp("تمت إزالة $email من المشرفين") { AdminCloud.removeModerator(email) } }
+                    )
+                }
+
+                "التحكم" -> item {
+                    ControlTab(
+                        isOwner = isOwner,
+                        config = config,
+                        onAnnouncement = { text -> launchOp(if (text.isBlank()) "تم حذف الإعلان" else "تم نشر الإعلان لكل المستخدمين") { AdminCloud.setAnnouncement(text) } },
+                        onPause = { p -> launchOp(if (p) "تم إيقاف نشر البلاغات مؤقتاً" else "تم استئناف نشر البلاغات") { AdminCloud.setReportsPaused(p) } },
+                        onMaintenance = { on, msg -> launchOp(if (on) "تم تفعيل وضع الصيانة" else "تم إيقاف وضع الصيانة") { AdminCloud.setMaintenance(on, msg) } }
+                    )
+                }
+
+                "السجل" -> {
+                    if (logs.isEmpty()) {
+                        item { EmptyNote("لا توجد عمليات مسجلة بعد") }
+                    } else {
+                        items(logs, key = { it.id }) { log ->
+                            Surface(shape = RoundedCornerShape(14.dp), color = BrandSurface, border = BorderStroke(1.dp, BrandBorder)) {
+                                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(log.action, color = YemenGold, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                                        Text(if (log.at > 0) formatRelativeTime(log.at) else "الآن", color = TextSecondaryLight, fontSize = 11.sp)
+                                    }
+                                    Text(log.target, color = PureWhite, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    if (log.details.isNotBlank()) Text(log.details, color = TextSecondaryLight, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text("بواسطة: ${log.by}", color = BrandCyan, fontSize = 10.sp)
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // Confirmation Dialog for Report Deletion
-    if (reportToDelete != null) {
-        val rep = reportToDelete!!
+    reportToDelete?.let { rep ->
         AlertDialog(
             onDismissRequest = { reportToDelete = null },
-            title = { Text("تأكيد حذف البلاغ كمشرف عام", fontWeight = FontWeight.Bold, color = AlertRed) },
-            text = {
-                Text(
-                    text = "هل أنت متأكد يا باشمهندس هاشم من حذف البلاغ #${rep.id} نهائياً؟\n\nالجهاز: ${rep.brand} ${rep.model}\nصاحب البلاغ: ${rep.contactName} (${rep.primaryPhone})",
-                    fontSize = 13.sp
-                )
-            },
+            containerColor = BrandSurface,
+            title = { Text("حذف البلاغ #${rep.id} نهائياً؟", color = PureWhite, fontWeight = FontWeight.Bold) },
+            text = { Text("${shortBrand(rep.brand)} ${rep.model}\nصاحب البلاغ: ${rep.contactName} (${rep.primaryPhone})\n\nلا يمكن التراجع. إذا كان مشبوهاً فقط، استخدم الإخفاء بدلاً من الحذف.", color = TextSecondaryLight) },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.adminDeleteReport(rep.id)
-                        Toast.makeText(context, "تم حذف البلاغ #${rep.id} بنجاح", Toast.LENGTH_SHORT).show()
-                        reportToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AlertRed)
-                ) {
-                    Text("حذف البلاغ فوراً", color = PureWhite, fontWeight = FontWeight.Bold)
-                }
+                TextButton(onClick = {
+                    viewModel.adminDeleteReport(rep.id)
+                    scope.launch { AdminCloud.log("حذف بلاغ", "#${rep.id} ${rep.model}", rep.primaryPhone) }
+                    Toast.makeText(context, "تم حذف البلاغ", Toast.LENGTH_SHORT).show()
+                    reportToDelete = null
+                }) { Text("حذف", color = AlertRed, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = {
-                TextButton(onClick = { reportToDelete = null }) {
-                    Text("إلغاء")
-                }
-            }
+            dismissButton = { TextButton(onClick = { reportToDelete = null }) { Text("إلغاء", color = PureWhite) } }
         )
     }
 
-    // Confirmation Dialog for User Ban
-    if (userToBan != null) {
-        val (ident, defaultReason) = userToBan!!
-        var banReason by remember { mutableStateOf(defaultReason) }
+    banTarget?.let { (ident, defaultReason) ->
+        var reason by remember(ident) { mutableStateOf(defaultReason) }
         AlertDialog(
-            onDismissRequest = { userToBan = null },
-            title = { Text("حظر حساب / رقم هاتف", fontWeight = FontWeight.Bold, color = AlertRed) },
+            onDismissRequest = { banTarget = null },
+            containerColor = BrandSurface,
+            title = { Text("حظر $ident", color = PureWhite, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("أنت بصدد حظر [$ident] من استخدام وتنزيل البلاغات في المنظومة:", fontSize = 13.sp)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = banReason,
-                        onValueChange = { banReason = it },
-                        label = { Text("سبب الحظر") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Text("سيُمنع من نشر أي بلاغ من كل الأجهزة.", color = TextSecondaryLight, fontSize = 13.sp)
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(value = reason, onValueChange = { reason = it }, label = { Text("سبب الحظر") }, colors = adminFieldColors(), modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        AdminManager.banAccount(ident, banReason)
-                        Toast.makeText(context, "تم حظر [$ident] بنجاح ومنعه من إضافة أي بلاغات", Toast.LENGTH_SHORT).show()
-                        userToBan = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AlertRed)
-                ) {
-                    Text("تأكيد الحظر 🚫", color = PureWhite, fontWeight = FontWeight.Bold)
-                }
+                TextButton(onClick = {
+                    val target = ident
+                    AdminManager.banAccount(target, reason) { ok, err ->
+                        scope.launch { Toast.makeText(context, if (ok) "تم حظر $target 🚫" else (err ?: "تعذر الحظر"), Toast.LENGTH_LONG).show() }
+                    }
+                    banTarget = null
+                }) { Text("حظر", color = AlertRed, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = {
-                TextButton(onClick = { userToBan = null }) {
-                    Text("إلغاء")
-                }
-            }
+            dismissButton = { TextButton(onClick = { banTarget = null }) { Text("إلغاء", color = PureWhite) } }
         )
     }
 }
 
+// ============================ Overview ============================
+
 @Composable
-fun AdminReportSupervisionCard(
-    report: ReportEntity,
-    onDelete: () -> Unit,
-    onBanOwner: () -> Unit,
-    onToggleRecovered: () -> Unit,
-    onOpenDetails: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Navy800),
-        border = BorderStroke(1.dp, Navy700),
-        modifier = Modifier.fillMaxWidth().testTag("admin_report_card_${report.id}")
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (report.reportType == "STOLEN") AlertRed else WarningAmber)
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = if (report.reportType == "STOLEN") "سرقة 🚨" else "فقدان ⚠️",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PureWhite
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "#${report.id} - ${report.brand} ${report.model}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = PureWhite
-                    )
-                }
-
-                if (report.isRecovered) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = SuccessGreen.copy(alpha = 0.2f)
-                    ) {
-                        Text(
-                            text = "تم الاسترجاع ✅",
-                            fontSize = 10.sp,
-                            color = SuccessGreen,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "📍 المحافظة: ${report.governorate} (${report.incidentLocation})",
-                fontSize = 11.sp,
-                color = PureWhite.copy(alpha = 0.8f)
-            )
-            Text(
-                text = "👤 صاحب البلاغ: ${report.contactName} | 📞 ${report.primaryPhone}",
-                fontSize = 11.sp,
-                color = WarningAmber
-            )
-            Text(
-                text = "IMEI: ${report.maskedImei}",
-                fontSize = 11.sp,
-                color = PureWhite.copy(alpha = 0.6f)
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Admin Control Buttons Bar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Button(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                    modifier = Modifier.weight(1f).height(34.dp).testTag("admin_delete_btn_${report.id}")
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, tint = PureWhite, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("حذف البلاغ", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Button(
-                    onClick = onBanOwner,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF475569)),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                    modifier = Modifier.weight(1f).height(34.dp).testTag("admin_ban_btn_${report.id}")
-                ) {
-                    Icon(Icons.Default.Block, contentDescription = null, tint = PureWhite, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("حظر الرقم", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-
-                OutlinedButton(
-                    onClick = onOpenDetails,
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                    modifier = Modifier.weight(1f).height(34.dp)
-                ) {
-                    Text("التفاصيل", fontSize = 11.sp, color = PureWhite)
-                }
-            }
-        }
+private fun OverviewTab(reports: List<ReportEntity>, bansCount: Int, config: com.example.data.remote.AppRemoteConfig) {
+    val now = System.currentTimeMillis()
+    val day = 24 * 60 * 60 * 1000L
+    val stolen = reports.count { it.reportType == "STOLEN" }
+    val lost = reports.count { it.reportType == "LOST" }
+    val found = reports.count { it.reportType == "FOUND" }
+    val recovered = reports.count { it.isRecovered }
+    val rate = if (reports.isEmpty()) 0 else (recovered * 100 / reports.size)
+    val last7 = (6 downTo 0).map { d ->
+        val start = now - (d + 1) * day
+        val end = now - d * day
+        reports.count { it.createdAt in start until end }
     }
-}
-
-@Composable
-fun AdminBannedAccountsSection(
-    bannedList: List<com.example.util.BannedAccount>,
-    onBanNew: (String, String) -> Unit,
-    onUnban: (String, String) -> Unit
-) {
-    var newIdentifier by remember { mutableStateOf("") }
-    var newReason by remember { mutableStateOf("") }
+    val byGov = reports.groupBy { it.governorate.substringBefore(" (") }.mapValues { it.value.size }
+        .entries.sortedByDescending { it.value }.take(6)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Form to Ban New
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = Navy800),
-            border = BorderStroke(1.dp, AlertRed.copy(alpha = 0.5f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+        if (config.maintenanceMode || config.reportsPaused) {
+            Surface(shape = RoundedCornerShape(14.dp), color = AlertRed.copy(alpha = 0.15f), border = BorderStroke(1.dp, AlertRed)) {
                 Text(
-                    text = "🚫 حظر رقم هاتف أو حساب جديد:",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AlertRed
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = newIdentifier,
-                    onValueChange = { newIdentifier = it },
-                    label = { Text("رقم الهاتف أو البريد أو اسم المستخدم") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AlertRed,
-                        unfocusedBorderColor = Navy700,
-                        focusedTextColor = PureWhite,
-                        unfocusedTextColor = PureWhite
-                    ),
-                    modifier = Modifier.fillMaxWidth().testTag("ban_identifier_input")
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = newReason,
-                    onValueChange = { newReason = it },
-                    label = { Text("سبب الحظر (مثال: بلاغات كاذبة أو تلاعب)") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AlertRed,
-                        unfocusedBorderColor = Navy700,
-                        focusedTextColor = PureWhite,
-                        unfocusedTextColor = PureWhite
-                    ),
-                    modifier = Modifier.fillMaxWidth().testTag("ban_reason_input")
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
-                    onClick = {
-                        if (newIdentifier.isNotBlank()) {
-                            onBanNew(newIdentifier.trim(), newReason.trim())
-                            newIdentifier = ""
-                            newReason = ""
-                        }
+                    buildString {
+                        if (config.maintenanceMode) append("⚠️ وضع الصيانة مفعّل. ")
+                        if (config.reportsPaused) append("⏸️ نشر البلاغات موقوف.")
                     },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
-                    modifier = Modifier.fillMaxWidth().testTag("confirm_ban_button")
-                ) {
-                    Icon(Icons.Default.PersonRemove, contentDescription = null, tint = PureWhite, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("إدراج في قائمة الحظر ومنعه من النشر", color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth().padding(12.dp)
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            KpiCard("البلاغات", "${reports.size}", BrandCyan, Modifier.weight(1f))
+            KpiCard("الاسترجاع", "$rate%", SuccessGreen, Modifier.weight(1f))
+            KpiCard("محظورون", "$bansCount", AlertRed, Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            KpiCard("مسروقة", "$stolen", AlertRed, Modifier.weight(1f))
+            KpiCard("مفقودة", "$lost", WarningAmber, Modifier.weight(1f))
+            KpiCard("معثور عليها", "$found", SuccessGreen, Modifier.weight(1f))
+        }
+
+        Panel("البلاغات آخر 7 أيام") {
+            val max = (last7.maxOrNull() ?: 0).coerceAtLeast(1)
+            Row(
+                Modifier.fillMaxWidth().height(110.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                last7.forEachIndexed { i, v ->
+                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("$v", color = PureWhite, fontSize = 10.sp)
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height((70f * v / max).coerceAtLeast(3f).dp)
+                                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                .background(if (i == 6) YemenGold else BrandCyan.copy(alpha = 0.6f))
+                        )
+                        Text(if (i == 6) "اليوم" else "-${6 - i}", color = TextSecondaryLight, fontSize = 9.sp)
+                    }
                 }
             }
         }
 
-        // Banned List
-        Text(
-            text = "قائمة الحسابات والأرقام المحظورة حالياً (${bannedList.size}):",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = PureWhite
-        )
+        Panel("أكثر المحافظات بلاغات") {
+            if (byGov.isEmpty()) Text("لا توجد بيانات", color = TextSecondaryLight, fontSize = 12.sp)
+            val max = (byGov.firstOrNull()?.value ?: 1).coerceAtLeast(1)
+            byGov.forEach { (gov, count) ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
+                    Text(gov, color = PureWhite, fontSize = 12.sp, modifier = Modifier.width(80.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(BrandSurfaceHigh)) {
+                        Box(Modifier.fillMaxWidth(count.toFloat() / max).height(10.dp).background(YemenGold))
+                    }
+                    Text("  $count", color = YemenGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
 
-        if (bannedList.isEmpty()) {
+@Composable
+private fun KpiCard(title: String, value: String, accent: Color, modifier: Modifier) {
+    Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = BrandSurface, border = BorderStroke(1.dp, BrandBorder)) {
+        Column(Modifier.padding(12.dp)) {
+            Text(value, color = accent, fontSize = 22.sp, fontWeight = FontWeight.Black)
+            Text(title, color = TextSecondaryLight, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun Panel(title: String, content: @Composable () -> Unit) {
+    Surface(shape = RoundedCornerShape(18.dp), color = BrandSurface, border = BorderStroke(1.dp, BrandBorder)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, color = PureWhite, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+            content()
+        }
+    }
+}
+
+@Composable
+private fun EmptyNote(text: String) {
+    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+        Text(text, color = TextSecondaryLight, fontSize = 13.sp)
+    }
+}
+
+// ============================ Reports ============================
+
+@Composable
+private fun ReportsAdminList(
+    reports: List<ReportEntity>,
+    config: com.example.data.remote.AppRemoteConfig,
+    onOpen: (ReportEntity) -> Unit,
+    onToggleRecovered: (ReportEntity) -> Unit,
+    onHide: (ReportEntity, Boolean) -> Unit,
+    onPin: (ReportEntity, Boolean) -> Unit,
+    onBan: (ReportEntity) -> Unit,
+    onDelete: (ReportEntity) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    var filter by remember { mutableStateOf("ALL") }
+    val filters = listOf("ALL" to "الكل", "STOLEN" to "مسروقة", "LOST" to "مفقودة", "FOUND" to "معثور", "RECOVERED" to "مسترجعة", "HIDDEN" to "مخفية")
+
+    val shown = reports.filter { r ->
+        val q = query.trim()
+        val mq = q.isBlank() || r.model.contains(q, true) || r.brand.contains(q, true) || r.imei1.contains(q) ||
+            r.primaryPhone.contains(q) || r.contactName.contains(q, true) || r.governorate.contains(q) || "#${r.id}" == q
+        val mf = when (filter) {
+            "ALL" -> true
+            "RECOVERED" -> r.isRecovered
+            "HIDDEN" -> r.imei1 in config.hiddenImeis
+            else -> r.reportType == filter
+        }
+        mq && mf
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedTextField(
+            value = query, onValueChange = { query = it },
+            placeholder = { Text("ابحث: IMEI، رقم، اسم، موديل، #رقم البلاغ", fontSize = 12.sp) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = YemenGold) },
+            singleLine = true, shape = RoundedCornerShape(14.dp), colors = adminFieldColors(),
+            modifier = Modifier.fillMaxWidth().testTag("admin_reports_search")
+        )
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            filters.forEach { (k, label) ->
+                FilterChip(
+                    selected = filter == k, onClick = { filter = k },
+                    label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    shape = RoundedCornerShape(50),
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = BrandSurface, labelColor = PureWhite.copy(alpha = 0.8f),
+                        selectedContainerColor = BrandCyan, selectedLabelColor = BrandInk
+                    )
+                )
+            }
+        }
+        Text("${shown.size} بلاغ", color = TextSecondaryLight, fontSize = 12.sp)
+
+        if (shown.isEmpty()) EmptyNote("لا توجد بلاغات مطابقة")
+        shown.take(200).forEach { r ->
+            val hidden = r.imei1 in config.hiddenImeis
+            val pinned = config.pinnedImei.isNotBlank() && r.imei1 == config.pinnedImei
             Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = Navy800,
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(18.dp),
+                color = BrandSurface,
+                border = BorderStroke(1.dp, if (pinned) YemenGold else if (hidden) AlertRed.copy(alpha = 0.5f) else BrandBorder),
+                modifier = Modifier.fillMaxWidth().testTag("admin_report_card_${r.id}")
             ) {
-                Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
-                    Text("لا توجد أرقام محظورة حالياً", color = PureWhite.copy(alpha = 0.6f), fontSize = 12.sp)
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("#${r.id} • ${shortBrand(r.brand)}", color = YemenGold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(r.model, color = PureWhite, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        StatusBadge(reportType = r.reportType, isRecovered = r.isRecovered)
+                    }
+                    if (pinned || hidden) {
+                        Text(
+                            listOfNotNull(if (pinned) "📌 مثبّت" else null, if (hidden) "🙈 مخفي عن المستخدمين" else null).joinToString("  •  "),
+                            color = if (hidden) AlertRed else YemenGold, fontSize = 11.sp, fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text("📍 ${r.governorate} • ${r.incidentLocation}", color = TextSecondaryLight, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("👤 ${r.contactName} • ${r.primaryPhone}  •  IMEI ${r.imei1}", color = TextSecondaryLight, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    HorizontalDivider(color = BrandBorder)
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ActionChip(Icons.Default.Search, "التفاصيل", BrandCyan) { onOpen(r) }
+                        ActionChip(Icons.Default.CheckCircle, if (r.isRecovered) "إلغاء الاسترجاع" else "تم الاسترجاع", SuccessGreen) { onToggleRecovered(r) }
+                        ActionChip(Icons.Default.PushPin, if (pinned) "إلغاء التثبيت" else "تثبيت", YemenGold) { onPin(r, !pinned) }
+                        ActionChip(if (hidden) Icons.Default.Visibility else Icons.Default.VisibilityOff, if (hidden) "إظهار" else "إخفاء", WarningAmber) { onHide(r, !hidden) }
+                        ActionChip(Icons.Default.Block, "حظر الرقم", PureWhite) { onBan(r) }
+                        ActionChip(Icons.Default.Delete, "حذف", AlertRed) { onDelete(r) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionChip(icon: ImageVector, label: String, color: Color, onClick: () -> Unit) {
+    Surface(onClick = onClick, shape = RoundedCornerShape(10.dp), color = color.copy(alpha = 0.12f), border = BorderStroke(1.dp, color.copy(alpha = 0.4f))) {
+        Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(label, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+// ============================ Bans ============================
+
+@Composable
+private fun BansTab(
+    bans: List<com.example.util.BannedAccount>,
+    onBan: (String, String) -> Unit,
+    onUnban: (com.example.util.BannedAccount) -> Unit
+) {
+    var ident by remember { mutableStateOf("") }
+    var reason by remember { mutableStateOf("") }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Panel("حظر رقم أو بريد") {
+            Text("الحظر سحابي: يطبّق على كل الأجهزة، وقاعدة البيانات ترفض أي بلاغ من المحظور.", color = TextSecondaryLight, fontSize = 12.sp)
+            OutlinedTextField(value = ident, onValueChange = { ident = it }, label = { Text("رقم الهاتف أو البريد") }, singleLine = true, colors = adminFieldColors(), modifier = Modifier.fillMaxWidth().testTag("ban_identifier_input"))
+            OutlinedTextField(value = reason, onValueChange = { reason = it }, label = { Text("السبب") }, singleLine = true, colors = adminFieldColors(), modifier = Modifier.fillMaxWidth().testTag("ban_reason_input"))
+            Button(
+                onClick = { if (ident.isNotBlank()) { onBan(ident.trim(), reason.trim()); ident = ""; reason = "" } },
+                enabled = ident.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = AlertRed, contentColor = PureWhite),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().height(46.dp).testTag("confirm_ban_button")
+            ) {
+                Icon(Icons.Default.Block, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("حظر", fontWeight = FontWeight.Bold)
+            }
+        }
+        Text("المحظورون (${bans.size})", color = PureWhite, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+        if (bans.isEmpty()) EmptyNote("لا يوجد محظورون")
+        bans.forEach { b ->
+            Surface(shape = RoundedCornerShape(14.dp), color = BrandSurface, border = BorderStroke(1.dp, BrandBorder)) {
+                Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(b.identifier, color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(b.reason, color = TextSecondaryLight, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text("${b.bannedBy}${if (b.bannedAt > 0) " • " + formatRelativeTime(b.bannedAt) else ""}", color = BrandCyan, fontSize = 10.sp)
+                    }
+                    TextButton(onClick = { onUnban(b) }, modifier = Modifier.testTag("unban_btn_${b.id}")) {
+                        Text("فك الحظر", color = SuccessGreen, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================ Broadcast ============================
+
+@Composable
+private fun BroadcastTab(onSend: (String, String, Boolean) -> Unit) {
+    var title by remember { mutableStateOf("تعميم أمني من إدارة أمان فون") }
+    var message by remember { mutableStateOf("") }
+    var urgent by remember { mutableStateOf(true) }
+    Panel("بث تعميم لكل المستخدمين") {
+        OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("العنوان") }, singleLine = true, colors = adminFieldColors(), modifier = Modifier.fillMaxWidth().testTag("broadcast_title_input"))
+        OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("نص التعميم") }, minLines = 3, colors = adminFieldColors(), modifier = Modifier.fillMaxWidth().testTag("broadcast_message_input"))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("عاجل 🚨", color = PureWhite, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Switch(checked = urgent, onCheckedChange = { urgent = it }, colors = SwitchDefaults.colors(checkedTrackColor = AlertRed))
+        }
+        Button(
+            onClick = { onSend(title.trim(), message.trim(), urgent); message = "" },
+            enabled = title.isNotBlank() && message.isNotBlank(),
+            colors = ButtonDefaults.buttonColors(containerColor = YemenGold, contentColor = BrandInk),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth().height(48.dp).testTag("send_broadcast_button")
+        ) {
+            Icon(Icons.Default.Campaign, contentDescription = null)
+            Spacer(Modifier.width(6.dp))
+            Text("بث التعميم الآن", fontWeight = FontWeight.ExtraBold)
+        }
+    }
+}
+
+// ============================ Team (owner) ============================
+
+@Composable
+private fun TeamTab(moderators: List<String>, onAdd: (String) -> Unit, onRemove: (String) -> Unit) {
+    var email by remember { mutableStateOf("") }
+    var toRemove by remember { mutableStateOf<String?>(null) }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Panel("إضافة مشرف") {
+            Text(
+                "المشرف يقدر يدير البلاغات (إخفاء، تثبيت، حذف، توثيق الاسترجاع)، ويحظر ويبث تعاميم وينشر إعلانات. " +
+                    "إضافة المشرفين والصيانة وإيقاف البلاغات تبقى لك وحدك. لازم يدخل المشرف ببريد مفعّل.",
+                color = TextSecondaryLight, fontSize = 12.sp, lineHeight = 18.sp
+            )
+            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("بريد المشرف") }, singleLine = true, colors = adminFieldColors(), modifier = Modifier.fillMaxWidth().testTag("moderator_email_input"))
+            Button(
+                onClick = { onAdd(email.trim()); email = "" },
+                enabled = email.contains("@"),
+                colors = ButtonDefaults.buttonColors(containerColor = YemenGold, contentColor = BrandInk),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().height(46.dp).testTag("add_moderator_button")
+            ) {
+                Icon(Icons.Default.PersonAdd, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text("إضافة للفريق", fontWeight = FontWeight.Bold)
+            }
+        }
+        Text("الفريق", color = PureWhite, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+        TeamRow(AdminManager.SUPER_ADMIN_EMAIL, "المشرف العام", YemenGold, null)
+        if (moderators.isEmpty()) Text("لا يوجد مشرفون إضافيون", color = TextSecondaryLight, fontSize = 12.sp)
+        moderators.forEach { m -> TeamRow(m, "مشرف", BrandCyan) { toRemove = m } }
+    }
+    toRemove?.let { m ->
+        AlertDialog(
+            onDismissRequest = { toRemove = null },
+            containerColor = BrandSurface,
+            title = { Text("إزالة $m من المشرفين؟", color = PureWhite, fontWeight = FontWeight.Bold) },
+            confirmButton = { TextButton(onClick = { onRemove(m); toRemove = null }) { Text("إزالة", color = AlertRed, fontWeight = FontWeight.Bold) } },
+            dismissButton = { TextButton(onClick = { toRemove = null }) { Text("إلغاء", color = PureWhite) } }
+        )
+    }
+}
+
+@Composable
+private fun TeamRow(email: String, role: String, color: Color, onRemove: (() -> Unit)?) {
+    Surface(shape = RoundedCornerShape(14.dp), color = BrandSurface, border = BorderStroke(1.dp, BrandBorder)) {
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(36.dp).clip(CircleShape).background(color.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+                Text(email.take(1).uppercase(), color = color, fontWeight = FontWeight.Black)
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(email, color = PureWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(role, color = color, fontSize = 11.sp)
+            }
+            if (onRemove != null) {
+                IconButton(onClick = onRemove) { Icon(Icons.Default.PersonRemove, contentDescription = "إزالة", tint = AlertRed) }
+            }
+        }
+    }
+}
+
+// ============================ Control ============================
+
+@Composable
+private fun ControlTab(
+    isOwner: Boolean,
+    config: com.example.data.remote.AppRemoteConfig,
+    onAnnouncement: (String) -> Unit,
+    onPause: (Boolean) -> Unit,
+    onMaintenance: (Boolean, String) -> Unit
+) {
+    var announcement by remember(config.announcement) { mutableStateOf(config.announcement) }
+    var maintMsg by remember(config.maintenanceMessage) { mutableStateOf(config.maintenanceMessage.ifBlank { "التطبيق تحت الصيانة مؤقتاً، نرجع لكم قريباً." }) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Panel("📢 إعلان أعلى التطبيق") {
+            Text("يظهر لكل المستخدمين فوق شريط التنقل.", color = TextSecondaryLight, fontSize = 12.sp)
+            OutlinedTextField(value = announcement, onValueChange = { announcement = it.take(300) }, label = { Text("نص الإعلان") }, minLines = 2, colors = adminFieldColors(), modifier = Modifier.fillMaxWidth().testTag("announcement_input"))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { onAnnouncement(announcement) },
+                    enabled = announcement.isNotBlank() && announcement != config.announcement,
+                    colors = ButtonDefaults.buttonColors(containerColor = YemenGold, contentColor = BrandInk),
+                    shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)
+                ) { Text("نشر", fontWeight = FontWeight.Bold) }
+                if (config.announcement.isNotBlank()) {
+                    Button(
+                        onClick = { announcement = ""; onAnnouncement("") },
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandSurfaceHigh, contentColor = PureWhite),
+                        shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)
+                    ) { Text("حذف الإعلان") }
+                }
+            }
+        }
+
+        if (isOwner) {
+            Panel("⏸️ إيقاف نشر البلاغات") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (config.reportsPaused) "النشر موقوف حالياً لكل المستخدمين" else "المستخدمون يقدرون ينشرون بلاغات",
+                        color = if (config.reportsPaused) AlertRed else PureWhite, fontSize = 13.sp, modifier = Modifier.weight(1f)
+                    )
+                    Switch(checked = config.reportsPaused, onCheckedChange = onPause, colors = SwitchDefaults.colors(checkedTrackColor = AlertRed))
+                }
+            }
+            Panel("🛠️ وضع الصيانة") {
+                Text("يقفل التطبيق على كل المستخدمين ما عدا المشرفين.", color = TextSecondaryLight, fontSize = 12.sp)
+                OutlinedTextField(value = maintMsg, onValueChange = { maintMsg = it.take(200) }, label = { Text("رسالة الصيانة") }, colors = adminFieldColors(), modifier = Modifier.fillMaxWidth())
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (config.maintenanceMode) "مفعّل" else "غير مفعّل", color = if (config.maintenanceMode) AlertRed else PureWhite, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Switch(checked = config.maintenanceMode, onCheckedChange = { onMaintenance(it, maintMsg) }, colors = SwitchDefaults.colors(checkedTrackColor = AlertRed))
                 }
             }
         } else {
-            bannedList.forEach { item ->
-                Card(
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = Navy800),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Block, contentDescription = null, tint = AlertRed, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(item.identifier, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = PureWhite)
-                            }
-                            Text("السبب: ${item.reason}", fontSize = 11.sp, color = PureWhite.copy(alpha = 0.8f))
-                            Text("بواسطة: ${item.bannedBy}", fontSize = 10.sp, color = WarningAmber)
-                        }
-
-                        Button(
-                            onClick = { onUnban(item.id, item.identifier) },
-                            colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                            modifier = Modifier.height(32.dp).testTag("unban_btn_${item.id}")
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("فك الحظر", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AdminSupervisorBroadcastSection(
-    onSendBroadcast: (String, String, Boolean) -> Unit
-) {
-    var title by remember { mutableStateOf("تعميم أمني عاجل من المشرف العام") }
-    var message by remember { mutableStateOf("") }
-    var isUrgent by remember { mutableStateOf(true) }
-
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Navy800),
-        border = BorderStroke(1.dp, SuccessGreen.copy(alpha = 0.6f)),
-        modifier = Modifier.fillMaxWidth().testTag("supervisor_broadcast_card")
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(SuccessGreen.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Campaign, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(20.dp))
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "بث تعميم أمني لكافة مستخدمي أمان فون",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = PureWhite
-                    )
-                    Text(
-                        text = "سيصل كإشعار فوري داخل التطبيق وعبر قنوات التنبيه",
-                        fontSize = 10.sp,
-                        color = SuccessGreen
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("عنوان التعميم") },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = WarningAmber,
-                    unfocusedBorderColor = Navy700,
-                    focusedTextColor = PureWhite,
-                    unfocusedTextColor = PureWhite
-                ),
-                modifier = Modifier.fillMaxWidth().testTag("broadcast_title_input")
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedTextField(
-                value = message,
-                onValueChange = { message = it },
-                label = { Text("نص الرسالة أو التعميم للمحلات والمستخدمين") },
-                minLines = 3,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = WarningAmber,
-                    unfocusedBorderColor = Navy700,
-                    focusedTextColor = PureWhite,
-                    unfocusedTextColor = PureWhite
-                ),
-                modifier = Modifier.fillMaxWidth().testTag("broadcast_message_input")
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = if (isUrgent) AlertRed else WarningAmber,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "تعميم عاجل عالي الأهمية 🚨",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PureWhite
-                    )
-                }
-
-                Switch(
-                    checked = isUrgent,
-                    onCheckedChange = { isUrgent = it },
-                    colors = SwitchDefaults.colors(checkedThumbColor = AlertRed, checkedTrackColor = Navy900)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Button(
-                onClick = {
-                    if (title.isNotBlank() && message.isNotBlank()) {
-                        onSendBroadcast(title.trim(), message.trim(), isUrgent)
-                        message = ""
-                    }
-                },
-                enabled = title.isNotBlank() && message.isNotBlank(),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
-                modifier = Modifier.fillMaxWidth().height(46.dp).testTag("send_broadcast_button")
-            ) {
-                Icon(Icons.Default.Campaign, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "📢 إرسال وبث التعميم فوراً لجميع المستخدمين",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    color = PureWhite
-                )
-            }
+            Text("الصيانة وإيقاف البلاغات متاحة للمشرف العام فقط.", color = TextSecondaryLight, fontSize = 12.sp)
         }
     }
 }

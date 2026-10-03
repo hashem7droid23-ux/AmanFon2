@@ -17,21 +17,48 @@ service cloud.firestore {
         && request.auth.token.email_verified == true;
     }
 
-    // Super admin is hard-wired and must have a verified email (Google Sign-In).
+    function configDoc() {
+      return /databases/$(database)/documents/config/config;
+    }
+
+    function config() {
+      return get(configDoc()).data;
+    }
+
+    // Super admin (owner) is hard-wired and must have a verified email.
     function isSuperAdmin() {
       return hasVerifiedEmail()
         && request.auth.token.email == 'hashem7droid23@gmail.com';
     }
 
-    // Secondary admin configured by the super admin in config/config.adminEmail
+    // Legacy single secondary admin (config/config.adminEmail)
     function isConfiguredAdmin() {
       return hasVerifiedEmail()
-        && exists(/databases/$(database)/documents/config/config)
-        && get(/databases/$(database)/documents/config/config).data.adminEmail == request.auth.token.email;
+        && exists(configDoc())
+        && config().get('adminEmail', '') == request.auth.token.email;
+    }
+
+    // Moderators team managed by the owner (config/config.moderators, lowercase emails)
+    function isModerator() {
+      return hasVerifiedEmail()
+        && exists(configDoc())
+        && request.auth.token.email.lower() in config().get('moderators', []);
     }
 
     function isAdmin() {
-      return isSuperAdmin() || isConfiguredAdmin();
+      return isSuperAdmin() || isConfiguredAdmin() || isModerator();
+    }
+
+    // Ban keys: uid, 9-digit local phone, lowercase email
+    function isBannedRequest(data) {
+      return exists(/databases/$(database)/documents/bans/$(request.auth.uid))
+        || exists(/databases/$(database)/documents/bans/$(data.primaryPhone))
+        || (('email' in request.auth.token) && request.auth.token.email is string
+            && exists(/databases/$(database)/documents/bans/$(request.auth.token.email.lower())));
+    }
+
+    function reportsPaused() {
+      return exists(configDoc()) && config().get('reportsPaused', false) == true;
     }
 
     function isValidReport(data) {
@@ -84,10 +111,11 @@ service cloud.firestore {
              data.createdAt is timestamp && data.createdAt <= request.time;
     }
 
-    // Reports: authenticated citizens and shops can read to search IMEI / find devices
+    // Reports: banned users and paused periods are blocked server-side
     match /reports/{reportId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidReport(request.resource.data);
+      allow create: if isAuthenticated() && isValidReport(request.resource.data) &&
+                    (isAdmin() || (!isBannedRequest(request.resource.data) && !reportsPaused()));
       allow update: if isAdmin() || (
         isOwner(resource.data.userId) &&
         isValidReport(request.resource.data) &&
@@ -116,10 +144,36 @@ service cloud.firestore {
       allow delete: if isOwner(userId) || isAdmin();
     }
 
-    // System Config: readable by the app, writable by the super admin only
+    // Cloud bans: every signed-in app checks them, only supervisors manage them
+    match /bans/{banKey} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() &&
+        request.resource.data.keys().hasOnly(['identifier', 'reason', 'bannedBy', 'bannedAt']) &&
+        request.resource.data.identifier is string && request.resource.data.identifier.size() <= 120 &&
+        request.resource.data.reason is string && request.resource.data.reason.size() <= 300;
+      allow delete: if isAdmin();
+    }
+
+    // Audit log: append-only, visible to supervisors only
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() &&
+        request.resource.data.keys().hasOnly(['action', 'target', 'details', 'by', 'at']) &&
+        request.resource.data.by == request.auth.token.email.lower() &&
+        request.resource.data.action is string && request.resource.data.action.size() <= 80;
+      allow update, delete: if false;
+    }
+
+    // System config: readable by the app.
+    // Owner: full control. Moderators: announcement, pinned report and hidden reports only.
     match /config/{docId} {
       allow read: if true;
-      allow write: if isSuperAdmin();
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (
+        isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['announcement', 'pinnedImei', 'hiddenImeis', 'updatedAt'])
+      );
     }
   }
 }

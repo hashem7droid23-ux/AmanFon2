@@ -15,7 +15,14 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -37,7 +44,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
@@ -124,6 +133,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Picks up email verification done in the mail app (link clicked) without re-login
+        lifecycleScope.launch { com.example.data.remote.FirebaseAuthManager.refreshUser() }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
@@ -147,7 +162,13 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
     val currentScreen by viewModel.currentScreen.collectAsStateWithLifecycle()
     val unreadCount by viewModel.unreadAlertsCount.collectAsStateWithLifecycle()
 
-    val showBottomBar = currentScreen in listOf(
+    val remoteConfig by com.example.data.remote.AdminCloud.config.collectAsStateWithLifecycle()
+    val isAdmin by com.example.util.AdminManager.isAdmin.collectAsStateWithLifecycle()
+    val pinned by viewModel.pinnedReport.collectAsStateWithLifecycle()
+    val inMaintenance = remoteConfig.maintenanceMode && !isAdmin &&
+        currentScreen != AppScreen.SPLASH && currentScreen != AppScreen.LOGIN
+
+    val showBottomBar = !inMaintenance && currentScreen in listOf(
         AppScreen.FEED,
         AppScreen.CHECK_IMEI,
         AppScreen.ALERTS,
@@ -162,6 +183,12 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
         contentWindowInsets = if (currentScreen == AppScreen.SPLASH) WindowInsets.systemBars else WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
+              Column {
+                AdminBroadcastStrip(
+                    announcement = remoteConfig.announcement,
+                    pinned = pinned,
+                    onOpenPinned = { id -> viewModel.openReportDetails(id) }
+                )
                 NavigationBar(
                     containerColor = BrandSurface,
                     tonalElevation = 0.dp,
@@ -217,6 +244,7 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                         tag = "nav_tab_guide"
                     ) { viewModel.navigateToTab(AppScreen.SHOPS_GUIDE) }
                 }
+              }
             }
         }
     ) { innerPadding ->
@@ -225,6 +253,9 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            if (inMaintenance) {
+                MaintenanceScreen(remoteConfig.maintenanceMessage)
+            } else {
             AnimatedContent(
                 targetState = currentScreen,
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -277,6 +308,7 @@ fun MainAppScaffold(viewModel: PhoneTrackerViewModel) {
                     )
                 }
             }
+            }
         }
     }
 }
@@ -307,4 +339,66 @@ private fun androidx.compose.foundation.layout.RowScope.BottomItem(
         colors = navColors(accent),
         modifier = Modifier.testTag(tag)
     )
+}
+
+@Composable
+private fun AdminBroadcastStrip(
+    announcement: String,
+    pinned: com.example.data.model.ReportEntity?,
+    onOpenPinned: (Long) -> Unit
+) {
+    if (announcement.isBlank() && pinned == null) return
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(com.example.ui.theme.BrandSurfaceHigh)
+    ) {
+        if (announcement.isNotBlank()) {
+            Text(
+                text = "📢 $announcement",
+                color = PureWhite,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .testTag("admin_announcement_strip")
+            )
+        }
+        if (pinned != null) {
+            Text(
+                text = "📌 بلاغ مثبّت: ${pinned.brand.substringBefore(" (")} ${pinned.model} • ${pinned.governorate.substringBefore(" (")}  ←",
+                color = YemenGold,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenPinned(pinned.id) }
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .testTag("admin_pinned_strip")
+            )
+        }
+    }
+}
+
+@Composable
+private fun MaintenanceScreen(message: String) {
+    Column(
+        modifier = Modifier.fillMaxSize().background(BrandBg).padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("🛠️", fontSize = 56.sp)
+        Spacer(Modifier.height(16.dp))
+        Text("التطبيق تحت الصيانة", color = PureWhite, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            message.ifBlank { "نعمل على تحسين الخدمة، نرجع لكم قريباً." },
+            color = PureWhite.copy(alpha = 0.75f), fontSize = 14.sp, textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(24.dp))
+        Text("إدارة منظومة أمان فون", color = YemenGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
 }

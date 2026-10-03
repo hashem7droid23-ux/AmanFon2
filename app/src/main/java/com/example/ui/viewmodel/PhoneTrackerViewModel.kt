@@ -88,9 +88,26 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
         AppStats(totalReports = total, activeStolen = stolen, recovered = recovered)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppStats())
 
+    // Reports hidden by supervisors are invisible to regular users (admins still see everything)
+    private val visibleReports = combine(
+        allReports,
+        com.example.data.remote.AdminCloud.config,
+        com.example.util.AdminManager.isAdmin
+    ) { reports, cfg, admin ->
+        if (admin || cfg.hiddenImeis.isEmpty()) reports else reports.filter { it.imei1 !in cfg.hiddenImeis }
+    }
+
+    /** Report pinned by a supervisor (shown above the bottom bar for everyone). */
+    val pinnedReport: StateFlow<ReportEntity?> = combine(
+        allReports,
+        com.example.data.remote.AdminCloud.config
+    ) { reports, cfg ->
+        if (cfg.pinnedImei.isBlank()) null else reports.firstOrNull { it.imei1 == cfg.pinnedImei }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     // Filtered Reports
     val filteredReports: StateFlow<List<ReportEntity>> = combine(
-        allReports,
+        visibleReports,
         searchQuery,
         filterGovernorate,
         filterType
@@ -254,6 +271,12 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
             return
         }
 
+        val isAdminNow = com.example.util.AdminManager.isAdmin.value
+        if (com.example.data.remote.AdminCloud.config.value.reportsPaused && !isAdminNow) {
+            onError("⏸️ نشر البلاغات موقوف مؤقتاً من إدارة المنظومة، حاول لاحقاً.")
+            return
+        }
+
         // Admin Security Enforcement: Check if user or phone number is banned
         if (com.example.util.AdminManager.isBanned(primaryPhone) ||
             com.example.util.AdminManager.isBanned(whatsappNumber) ||
@@ -280,8 +303,8 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
                     incidentLocation = incidentLocation.trim(),
                     incidentTimestamp = System.currentTimeMillis(),
                     contactName = contactName.trim(),
-                    primaryPhone = primaryPhone.trim(),
-                    whatsappNumber = whatsappNumber.trim().ifBlank { primaryPhone.trim() },
+                    primaryPhone = normalizeLocalPhone(primaryPhone),
+                    whatsappNumber = normalizeLocalPhone(whatsappNumber.ifBlank { primaryPhone }),
                     rewardAmount = rewardLong,
                     policeReportNumber = policeReportNumber.trim(),
                     additionalNotes = additionalNotes.trim(),
@@ -296,6 +319,15 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
                 onError(e.message ?: "حدث خطأ أثناء حفظ البلاغ")
             }
         }
+    }
+
+    /** 9-digit local Yemeni number (same key the cloud ban rules check). */
+    private fun normalizeLocalPhone(raw: String): String {
+        var d = raw.filter { it.isDigit() }
+        if (d.startsWith("00967")) d = d.removePrefix("00967")
+        else if (d.startsWith("967") && d.length > 9) d = d.removePrefix("967")
+        if (d.startsWith("0") && d.length == 10) d = d.removePrefix("0")
+        return d.ifBlank { raw.trim() }
     }
 
     fun clearSubmissionMessage() {
