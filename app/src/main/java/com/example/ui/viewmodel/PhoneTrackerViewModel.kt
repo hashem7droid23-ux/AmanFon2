@@ -247,6 +247,8 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
         rewardAmountStr: String,
         policeReportNumber: String,
         additionalNotes: String,
+        serialNumber: String = "",
+        photoUris: List<String> = emptyList(),
         onSuccess: (Long) -> Unit,
         onError: (String) -> Unit
     ) {
@@ -296,6 +298,7 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
                     model = model.trim(),
                     imei1 = cleanImei,
                     imei2 = ImeiValidator.clean(imei2),
+                    serialNumber = serialNumber.trim().uppercase().take(40),
                     color = color.trim().ifBlank { "غير محدد" },
                     distinctiveMarks = distinctiveMarks.trim(),
                     governorate = governorate,
@@ -311,6 +314,16 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
                     createdAt = System.currentTimeMillis()
                 )
                 val id = repository.insertReport(newReport, notifyBroadcast = true)
+                if (photoUris.isNotEmpty()) {
+                    val app = getApplication<Application>()
+                    // Saved on the device before opening the details screen, published in the background
+                    val images = try {
+                        com.example.util.ReportPhotos.saveLocal(app, cleanImei, photoUris)
+                    } catch (_: Exception) { emptyList() }
+                    if (images.isNotEmpty()) {
+                        viewModelScope.launch { com.example.util.ReportPhotos.upload(app, cleanImei, images) }
+                    }
+                }
                 _isSubmitting.value = false
                 _submissionSuccessMessage.value = "تم تسجيل البلاغ بنجاح وتعميمه فوراً برقم #$id"
                 onSuccess(id)
