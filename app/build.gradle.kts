@@ -8,7 +8,7 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
-println("signing-guard-test: " + java.io.File(rootDir, "debug.keystore").exists())
+// ci reconfigure test
 
 android {
   namespace = "com.example"
