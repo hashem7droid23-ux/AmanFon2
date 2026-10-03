@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Search
@@ -79,6 +80,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.YemenLocations
+import com.example.ui.components.PhotoPickerSection
 import com.example.ui.components.formatAmount
 import com.example.ui.theme.AlertRed
 import com.example.ui.theme.BrandBg
@@ -93,6 +95,7 @@ import com.example.ui.theme.TextSecondaryLight
 import com.example.ui.theme.WarningAmber
 import com.example.ui.theme.YemenGold
 import com.example.ui.viewmodel.PhoneTrackerViewModel
+import com.example.util.ImeiScanner
 import com.example.util.ImeiValidator
 
 private val STEP_TITLES = listOf("الجهاز", "المكان", "التواصل")
@@ -123,8 +126,12 @@ fun NewReportScreen(
     var model by rememberSaveable { mutableStateOf("") }
     var imei1 by rememberSaveable { mutableStateOf("") }
     var imei2 by rememberSaveable { mutableStateOf("") }
+    var serial by rememberSaveable { mutableStateOf("") }
     var color by rememberSaveable { mutableStateOf("") }
     var marks by rememberSaveable { mutableStateOf("") }
+    // Photo URIs, newline separated (simple to save across rotation)
+    var photosRaw by rememberSaveable { mutableStateOf("") }
+    val photos = photosRaw.split("\n").filter { it.isNotBlank() }
 
     var selectedGov by rememberSaveable { mutableStateOf(YemenLocations.GOVERNORATES[0]) }
     var district by rememberSaveable { mutableStateOf("") }
@@ -136,6 +143,8 @@ fun NewReportScreen(
     var rewardAmount by rememberSaveable { mutableStateOf("") }
     var policeReport by rememberSaveable { mutableStateOf("") }
     var notes by rememberSaveable { mutableStateOf("") }
+
+    val scanError: (String) -> Unit = { msg -> Toast.makeText(context, msg, Toast.LENGTH_LONG).show() }
 
     // ---- validation ----
     val imei1Clean = ImeiValidator.clean(imei1)
@@ -186,6 +195,8 @@ fun NewReportScreen(
             rewardAmountStr = rewardAmount.filter { it.isDigit() },
             policeReportNumber = policeReport.trim(),
             additionalNotes = notes.trim(),
+            serialNumber = serial.trim(),
+            photoUris = photos,
             onSuccess = { newId ->
                 Toast.makeText(context, "تم نشر البلاغ وتعميم التنبيه ✅", Toast.LENGTH_LONG).show()
                 onReportSubmitted(newId)
@@ -306,7 +317,7 @@ fun NewReportScreen(
                             Field(model, { model = it }, "الموديل *", "مثال: Galaxy S23 Ultra 256GB",
                                 error = modelErr.takeIf { showErrors }, tag = "model_input_field")
                             Field(
-                                imei1, { imei1 = it.filter(Char::isDigit).take(15) }, "IMEI الأول *", "اطلب *#06# أو من الكرتون",
+                                imei1, { imei1 = it.filter(Char::isDigit).take(15) }, "IMEI الأول *", "صوّر الباركود أو اطلب *#06#",
                                 keyboard = KeyboardType.Number, mono = true,
                                 error = imei1Err.takeIf { showErrors || imei1Clean.length == 15 },
                                 support = when {
@@ -321,18 +332,41 @@ fun NewReportScreen(
                                 },
                                 tag = "imei1_input_field",
                                 trailing = {
-                                    IconButton(onClick = {
-                                        clipboardManager.getText()?.text?.let { c -> imei1 = c.filter(Char::isDigit).take(15) }
-                                    }) { Icon(Icons.Default.ContentPaste, contentDescription = "لصق", tint = YemenGold) }
+                                    Row {
+                                        IconButton(
+                                            onClick = { ImeiScanner.scan(context, { imei1 = it }, scanError) },
+                                            modifier = Modifier.testTag("imei1_scan_button")
+                                        ) { Icon(Icons.Default.QrCodeScanner, contentDescription = "تصوير الباركود", tint = YemenGold) }
+                                        IconButton(onClick = {
+                                            clipboardManager.getText()?.text?.let { c -> imei1 = c.filter(Char::isDigit).take(15) }
+                                        }) { Icon(Icons.Default.ContentPaste, contentDescription = "لصق", tint = TextSecondaryLight) }
+                                    }
                                 }
                             )
                             Field(imei2, { imei2 = it.filter(Char::isDigit).take(15) }, "IMEI الثاني (اختياري)", null,
-                                keyboard = KeyboardType.Number, mono = true, error = imei2Err.takeIf { showErrors })
+                                keyboard = KeyboardType.Number, mono = true, error = imei2Err.takeIf { showErrors },
+                                trailing = {
+                                    IconButton(onClick = { ImeiScanner.scan(context, { imei2 = it }, scanError) }) {
+                                        Icon(Icons.Default.QrCodeScanner, contentDescription = "تصوير الباركود", tint = YemenGold)
+                                    }
+                                })
+                            Field(
+                                serial, { serial = it.filter(Char::isLetterOrDigit).uppercase().take(24) },
+                                "الرقم التسلسلي S/N (اختياري)", "صوّر باركود S/N من الكرتون",
+                                mono = true, tag = "serial_input_field",
+                                trailing = {
+                                    IconButton(
+                                        onClick = { ImeiScanner.scanSerial(context, { serial = it }, scanError) },
+                                        modifier = Modifier.testTag("serial_scan_button")
+                                    ) { Icon(Icons.Default.QrCodeScanner, contentDescription = "تصوير الباركود", tint = YemenGold) }
+                                }
+                            )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Field(color, { color = it }, "اللون", "أسود، أزرق..", modifier = Modifier.weight(1f))
                                 Field(marks, { marks = it }, "علامات فارقة", "خدش، كفر..", modifier = Modifier.weight(1.4f))
                             }
                         }
+                        PhotoPickerSection(photos = photos, onPhotosChange = { photosRaw = it.joinToString("\n") })
                     }
                     1 -> {
                         Label("أين حدث ذلك؟")
@@ -370,7 +404,9 @@ fun NewReportScreen(
                                 Text("مراجعة قبل النشر", color = typeAccent, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
                                 Text("${selectedBrand.substringBefore(" (")} ${model.trim()}", color = PureWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 Text("IMEI $imei1Clean", color = TextSecondaryLight, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                                if (serial.isNotBlank()) Text("S/N ${serial.trim()}", color = TextSecondaryLight, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                                 Text("$selectedGov • ${incidentLocation.trim()}", color = TextSecondaryLight, fontSize = 12.sp)
+                                if (photos.isNotEmpty()) Text("📷 ${photos.size} صور للجهاز", color = TextSecondaryLight, fontSize = 12.sp)
                                 HorizontalDivider(color = BrandBorder, modifier = Modifier.padding(vertical = 6.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Campaign, contentDescription = null, tint = YemenGold, modifier = Modifier.size(16.dp))

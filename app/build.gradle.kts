@@ -16,8 +16,8 @@ android {
     applicationId = "com.aistudio.lostphone.ymndx"
     minSdk = 24
     targetSdk = 34
-    versionCode = 7
-    versionName = "1.6"
+    versionCode = 8
+    versionName = "1.7"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -127,6 +127,8 @@ dependencies {
   implementation(libs.androidx.credentials)
   implementation(libs.androidx.credentials.play.services)
   implementation(libs.googleid)
+  // Google code scanner: IMEI / serial barcodes, no camera permission needed
+  implementation(libs.play.services.code.scanner)
   implementation(libs.firebase.appcheck.recaptcha)
   // The App Check debug provider must never ship in production builds
   debugImplementation(libs.firebase.appcheck.debug)
