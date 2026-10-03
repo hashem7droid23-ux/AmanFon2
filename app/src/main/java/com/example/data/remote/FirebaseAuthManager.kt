@@ -3,11 +3,14 @@ package com.example.data.remote
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.Credential
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -113,6 +116,21 @@ object FirebaseAuthManager {
         }
     }
 
+    private fun isUserCancel(e: Exception): Boolean {
+        val m = e.message.orEmpty()
+        return m.contains("cancelled by the user", true) || m.contains("canceled by the user", true)
+    }
+
+    private suspend fun finishGoogle(credential: Credential) {
+        if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+            val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
+            val authCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
+            Firebase.auth.signInWithCredential(authCredential).await()
+        } else {
+            throw IllegalStateException("نوع بيانات الاعتماد غير متوافق")
+        }
+    }
+
     fun onGoogleSignInClicked(
         context: Context,
         credentialManager: CredentialManager,
@@ -127,34 +145,62 @@ object FirebaseAuthManager {
             return
         }
 
-        val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId).build()
-        val request = GetCredentialRequest.Builder()
-            .addCredentialOption(signInOption)
+        val activity = context as? Activity
+        if (activity == null) {
+            onAuthError("Context is not an Activity")
+            return
+        }
+
+        val primary = GetCredentialRequest.Builder()
+            .addCredentialOption(GetSignInWithGoogleOption.Builder(serverClientId = clientId).build())
+            .build()
+        // Fallback flow (bottom sheet) for devices where the button flow fails with reauth errors
+        val fallback = GetCredentialRequest.Builder()
+            .addCredentialOption(
+                GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId(clientId)
+                    .setAutoSelectEnabled(false)
+                    .build()
+            )
             .build()
 
         scope.launch {
             try {
-                val activity = context as? Activity
-                if (activity == null) {
-                    onAuthError("Context is not an Activity")
-                    return@launch
+                val result = try {
+                    credentialManager.getCredential(activity, primary)
+                } catch (e: GetCredentialCancellationException) {
+                    if (isUserCancel(e)) throw e
+                    Log.w(TAG, "Primary Google flow failed (${e.message}), trying fallback")
+                    credentialManager.getCredential(activity, fallback)
                 }
-                val result = credentialManager.getCredential(activity, request)
-                val credential = result.credential
-                if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                    val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
-                    val authCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
-                    Firebase.auth.signInWithCredential(authCredential).await()
-                    onAuthSuccess()
-                } else {
-                    onAuthError("نوع بيانات الاعتماد غير متوافق")
-                }
+                finishGoogle(result.credential)
+                onAuthSuccess()
             } catch (e: GetCredentialCancellationException) {
-                Log.w(TAG, "Google Sign-In flow cancelled: ${e.message}", e)
-                onAuthCancelled()
+                Log.w(TAG, "Google Sign-In cancelled: ${e.message}", e)
+                if (isUserCancel(e)) {
+                    onAuthCancelled()
+                } else {
+                    // Typically "[16] Account reauth failed": the APK signature (SHA-1) is not
+                    // registered for this package in the Firebase / Google Cloud project.
+                    Toast.makeText(
+                        activity,
+                        "❌ رفض Google الدخول: بصمة التطبيق غير مسجّلة لمشروع Firebase.\nالتفاصيل: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    onAuthCancelled()
+                }
+            } catch (e: NoCredentialException) {
+                Log.e(TAG, "No Google account", e)
+                onAuthError("لا يوجد حساب Google على الجهاز. أضف حساباً من الإعدادات ثم حاول مجدداً")
             } catch (e: Exception) {
                 Log.e(TAG, "Google Sign-In failed", e)
-                onAuthError(e.localizedMessage ?: "فشل تسجيل الدخول بواسطة جوجل")
+                Toast.makeText(
+                    activity,
+                    "❌ فشل الدخول عبر Google: ${mapAuthError(e)}",
+                    Toast.LENGTH_LONG
+                ).show()
+                onAuthCancelled()
             }
         }
     }
@@ -296,7 +342,7 @@ object FirebaseAuthManager {
         return when {
             code == "ERROR_OPERATION_NOT_ALLOWED" ||
                 e.message?.contains("sign-in provider is disabled", ignoreCase = true) == true ->
-                "طريقة الدخول هذه غير مفعّلة حالياً في النظام، جرّب الدخول عبر Google"
+                "طريقة الدخول هذه غير مفعّلة حالياً في النظام"
             e is FirebaseNetworkException -> "لا يوجد اتصال بالإنترنت، تحقق من الشبكة وحاول مجدداً"
             e is FirebaseTooManyRequestsException -> "محاولات كثيرة، يرجى الانتظار قليلاً ثم المحاولة"
             e is FirebaseAuthWeakPasswordException -> "كلمة المرور ضعيفة، استخدم 6 أحرف على الأقل"
@@ -310,6 +356,7 @@ object FirebaseAuthManager {
                 "ERROR_INVALID_VERIFICATION_CODE" -> "رمز التحقق غير صحيح"
                 "ERROR_SESSION_EXPIRED" -> "انتهت صلاحية الرمز، اطلب رمزاً جديداً"
                 "ERROR_INVALID_PHONE_NUMBER" -> "رقم الهاتف غير صحيح"
+                "ERROR_INVALID_CREDENTIAL" -> "بيانات Google مرفوضة من Firebase (تأكد من تفعيل مزوّد Google)"
                 else -> "البريد أو كلمة المرور غير صحيحة"
             }
             e.message?.contains("BILLING_NOT_ENABLED", ignoreCase = true) == true ->
