@@ -1,196 +1,131 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
+    function isAuthenticated() { return request.auth != null; }
+    function isOwner(userId) { return isAuthenticated() && request.auth.uid == userId; }
     function hasVerifiedEmail() {
-      return isAuthenticated()
-        && ('email' in request.auth.token)
-        && ('email_verified' in request.auth.token)
-        && request.auth.token.email_verified == true;
+      return isAuthenticated() && ('email' in request.auth.token) &&
+        ('email_verified' in request.auth.token) && request.auth.token.email_verified == true;
     }
-
-    function configDoc() {
-      return /databases/$(database)/documents/config/config;
-    }
-
-    function config() {
-      return get(configDoc()).data;
-    }
-
-    // Super admin (owner) is hard-wired and must have a verified email.
-    function isSuperAdmin() {
-      return hasVerifiedEmail()
-        && request.auth.token.email == 'hashem7droid23@gmail.com';
-    }
-
-    // Legacy single secondary admin (config/config.adminEmail)
-    function isConfiguredAdmin() {
-      return hasVerifiedEmail()
-        && exists(configDoc())
-        && config().get('adminEmail', '') == request.auth.token.email;
-    }
-
-    // Moderators team managed by the owner (config/config.moderators, lowercase emails)
-    function isModerator() {
-      return hasVerifiedEmail()
-        && exists(configDoc())
-        && request.auth.token.email.lower() in config().get('moderators', []);
-    }
-
-    function isAdmin() {
-      return isSuperAdmin() || isConfiguredAdmin() || isModerator();
-    }
-
-    // Ban keys: uid, 9-digit local phone, lowercase email
+    function configDoc() { return /databases/$(database)/documents/config/config; }
+    function config() { return get(configDoc()).data; }
+    function isSuperAdmin() { return hasVerifiedEmail() && request.auth.token.email == 'hashem7droid23@gmail.com'; }
+    function isConfiguredAdmin() { return hasVerifiedEmail() && exists(configDoc()) && config().get('adminEmail', '') == request.auth.token.email; }
+    function isModerator() { return hasVerifiedEmail() && exists(configDoc()) && request.auth.token.email.lower() in config().get('moderators', []); }
+    function isAdmin() { return isSuperAdmin() || isConfiguredAdmin() || isModerator(); }
     function isBannedRequest(data) {
-      return exists(/databases/$(database)/documents/bans/$(request.auth.uid))
-        || exists(/databases/$(database)/documents/bans/$(data.primaryPhone))
-        || (('email' in request.auth.token) && request.auth.token.email is string
-            && exists(/databases/$(database)/documents/bans/$(request.auth.token.email.lower())));
+      return exists(/databases/$(database)/documents/bans/$(request.auth.uid)) ||
+        exists(/databases/$(database)/documents/bans/$(data.primaryPhone)) ||
+        (('email' in request.auth.token) && request.auth.token.email is string &&
+         exists(/databases/$(database)/documents/bans/$(request.auth.token.email.lower())));
     }
-
-    function reportsPaused() {
-      return exists(configDoc()) && config().get('reportsPaused', false) == true;
+    function reportsPaused() { return exists(configDoc()) && config().get('reportsPaused', false) == true; }
+    function validImei(value) { return value is string && value.matches('^[0-9]{15}$'); }
+    function optionalString(data, field, maximum) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maximum);
     }
-
     function isValidReport(data) {
       return data.keys().hasOnly([
-               'userId', 'reportType', 'brand', 'model', 'imei1', 'imei2', 'serialNumber',
-               'color', 'distinctiveMarks', 'governorate', 'district', 'incidentLocation',
-               'contactName', 'primaryPhone', 'whatsappNumber', 'rewardAmount',
-               'policeReportNumber', 'isRecovered', 'additionalNotes', 'createdAt', 'updatedAt'
-             ]) &&
-             data.userId is string && data.userId == request.auth.uid &&
-             data.reportType in ['STOLEN', 'LOST', 'FOUND'] &&
-             data.brand is string && data.brand.size() >= 2 && data.brand.size() <= 50 &&
-             data.model is string && data.model.size() >= 2 && data.model.size() <= 100 &&
-             data.imei1 is string && data.imei1.size() >= 8 && data.imei1.size() <= 20 &&
-             data.governorate is string && data.governorate.size() >= 2 && data.governorate.size() <= 60 &&
-             data.incidentLocation is string && data.incidentLocation.size() >= 2 && data.incidentLocation.size() <= 300 &&
-             data.contactName is string && data.contactName.size() >= 2 && data.contactName.size() <= 100 &&
-             data.primaryPhone is string && data.primaryPhone.size() >= 6 && data.primaryPhone.size() <= 20 &&
-             data.isRecovered is bool &&
-             data.createdAt is timestamp && data.createdAt <= request.time &&
-             (!('additionalNotes' in data) || (data.additionalNotes is string && data.additionalNotes.size() <= 2000)) &&
-             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time)) &&
-             (!('rewardAmount' in data) || (data.rewardAmount is int && data.rewardAmount >= 0));
+        'userId', 'reportType', 'brand', 'model', 'imei1', 'imei2', 'serialNumber',
+        'color', 'distinctiveMarks', 'governorate', 'district', 'incidentLocation',
+        'contactName', 'primaryPhone', 'whatsappNumber', 'rewardAmount',
+        'policeReportNumber', 'isRecovered', 'additionalNotes', 'createdAt', 'updatedAt'
+      ]) && data.userId is string && data.userId == request.auth.uid &&
+      data.reportType in ['STOLEN', 'LOST', 'FOUND'] &&
+      data.brand is string && data.brand.size() >= 2 && data.brand.size() <= 50 &&
+      data.model is string && data.model.size() >= 2 && data.model.size() <= 100 &&
+      validImei(data.imei1) &&
+      (!('imei2' in data) || data.imei2 == '' || validImei(data.imei2)) &&
+      optionalString(data, 'serialNumber', 40) && optionalString(data, 'color', 100) &&
+      optionalString(data, 'distinctiveMarks', 1000) && optionalString(data, 'district', 100) &&
+      optionalString(data, 'whatsappNumber', 20) && optionalString(data, 'policeReportNumber', 100) &&
+      data.governorate is string && data.governorate.size() >= 2 && data.governorate.size() <= 60 &&
+      data.incidentLocation is string && data.incidentLocation.size() >= 2 && data.incidentLocation.size() <= 300 &&
+      data.contactName is string && data.contactName.size() >= 2 && data.contactName.size() <= 100 &&
+      data.primaryPhone is string && data.primaryPhone.size() >= 6 && data.primaryPhone.size() <= 20 &&
+      data.isRecovered is bool && data.createdAt is timestamp && data.createdAt <= request.time &&
+      optionalString(data, 'additionalNotes', 2000) &&
+      (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time)) &&
+      (!('rewardAmount' in data) || (data.rewardAmount is int && data.rewardAmount >= 0));
     }
-
     function isValidAlert(data) {
-      return data.keys().hasOnly([
-               'authorId', 'reportId', 'title', 'message', 'governorate',
-               'deviceModel', 'imeiSnippet', 'alertType', 'timestamp'
-             ]) &&
-             data.authorId is string && data.authorId == request.auth.uid &&
-             data.title is string && data.title.size() >= 3 && data.title.size() <= 150 &&
-             data.message is string && data.message.size() >= 3 && data.message.size() <= 500 &&
-             data.governorate is string && data.governorate.size() <= 60 &&
-             data.alertType is string &&
-             data.timestamp is timestamp && data.timestamp <= request.time;
+      return data.keys().hasOnly(['authorId', 'reportId', 'title', 'message', 'governorate', 'deviceModel', 'imeiSnippet', 'alertType', 'timestamp']) &&
+        data.authorId is string && data.authorId == request.auth.uid &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 150 &&
+        data.message is string && data.message.size() >= 3 && data.message.size() <= 500 &&
+        data.governorate is string && data.governorate.size() <= 60 &&
+        data.alertType is string && data.timestamp is timestamp && data.timestamp <= request.time;
     }
-
-    // A normal user may only broadcast an alert that points to a report they own.
     function isAlertForOwnReport(data) {
       return data.alertType in ['URGENT_THEFT', 'COMMUNITY_ALERT', 'DEVICE_FOUND', 'RECOVERY'] &&
-             data.reportId is string && data.reportId.size() > 0 &&
-             exists(/databases/$(database)/documents/reports/$(data.reportId)) &&
-             get(/databases/$(database)/documents/reports/$(data.reportId)).data.userId == request.auth.uid;
+        data.reportId is string && data.reportId.size() > 0 &&
+        exists(/databases/$(database)/documents/reports/$(data.reportId)) &&
+        get(/databases/$(database)/documents/reports/$(data.reportId)).data.userId == request.auth.uid;
     }
-
     function isValidUserProfile(data) {
       return data.userId is string && data.userId == request.auth.uid &&
-             data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 100 &&
-             data.createdAt is timestamp && data.createdAt <= request.time;
+        data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 100 &&
+        data.createdAt is timestamp && data.createdAt <= request.time;
     }
-
-    // Reports: banned users and paused periods are blocked server-side
     match /reports/{reportId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidReport(request.resource.data) &&
-                    (isAdmin() || (!isBannedRequest(request.resource.data) && !reportsPaused()));
-      allow update: if isAdmin() || (
-        isOwner(resource.data.userId) &&
-        isValidReport(request.resource.data) &&
-        request.resource.data.userId == resource.data.userId &&
-        request.resource.data.createdAt == resource.data.createdAt
-      );
+        (isAdmin() || (!isBannedRequest(request.resource.data) && !reportsPaused()));
+      allow update: if isAdmin() || (isOwner(resource.data.userId) &&
+        isValidReport(request.resource.data) && request.resource.data.userId == resource.data.userId &&
+        request.resource.data.createdAt == resource.data.createdAt);
       allow delete: if isAdmin() || isOwner(resource.data.userId);
     }
-
-    // Broadcast Alerts: only report owners (for their own report) or admins can publish
     match /alerts/{alertId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidAlert(request.resource.data) &&
-                    (isAdmin() || isAlertForOwnReport(request.resource.data));
-      allow update: if isAdmin() ||
-                    (isOwner(resource.data.authorId) && isValidAlert(request.resource.data) &&
-                     request.resource.data.alertType == resource.data.alertType &&
-                     request.resource.data.reportId == resource.data.reportId);
+      allow create: if isAuthenticated() && isValidAlert(request.resource.data) && (isAdmin() || isAlertForOwnReport(request.resource.data));
+      allow update: if isAdmin() || (isOwner(resource.data.authorId) && isValidAlert(request.resource.data) &&
+        request.resource.data.alertType == resource.data.alertType && request.resource.data.reportId == resource.data.reportId);
       allow delete: if isAdmin() || isOwner(resource.data.authorId);
     }
-
-    // User Profiles: private to the owner (and admins)
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create, update: if isOwner(userId) && isValidUserProfile(request.resource.data);
       allow delete: if isOwner(userId) || isAdmin();
     }
-
-    // Phone photos attached to a report (compressed JPEG, base64), keyed by IMEI
+    function validImage(image) { return image is string && image.size() > 0 && image.size() <= 213336; }
     function isValidPhotos(data, imei) {
-      return data.keys().hasOnly(['userId', 'imei', 'photos', 'updatedAt']) &&
-             data.userId == request.auth.uid &&
-             data.imei == imei &&
-             data.photos is list && data.photos.size() >= 1 && data.photos.size() <= 3;
+      return data.keys().hasOnly(['userId', 'reportId', 'imei', 'photos', 'updatedAt']) &&
+        data.userId == request.auth.uid && data.imei == imei && validImei(imei) &&
+        data.reportId is string && data.reportId.size() > 0 && data.reportId.size() <= 100 &&
+        exists(/databases/$(database)/documents/reports/$(data.reportId)) &&
+        get(/databases/$(database)/documents/reports/$(data.reportId)).data.userId == request.auth.uid &&
+        get(/databases/$(database)/documents/reports/$(data.reportId)).data.imei1 == imei &&
+        (isAdmin() || !isBannedRequest(get(/databases/$(database)/documents/reports/$(data.reportId)).data)) &&
+        data.photos is list && data.photos.size() >= 1 && data.photos.size() <= 3 &&
+        validImage(data.photos[0]) && (data.photos.size() < 2 || validImage(data.photos[1])) &&
+        (data.photos.size() < 3 || validImage(data.photos[2])) &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
     }
-
     match /report_photos/{imei} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidPhotos(request.resource.data, imei);
-      allow update: if isAdmin() ||
-                    (isAuthenticated() && resource.data.userId == request.auth.uid &&
-                     isValidPhotos(request.resource.data, imei));
-      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin()) &&
+        request.resource.data.userId == resource.data.userId && isValidPhotos(request.resource.data, imei);
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
     }
-
-    // Cloud bans: every signed-in app checks them, only supervisors manage them
     match /bans/{banKey} {
       allow read: if isAuthenticated();
-      allow create, update: if isAdmin() &&
-        request.resource.data.keys().hasOnly(['identifier', 'reason', 'bannedBy', 'bannedAt']) &&
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['identifier', 'reason', 'bannedBy', 'bannedAt']) &&
         request.resource.data.identifier is string && request.resource.data.identifier.size() <= 120 &&
         request.resource.data.reason is string && request.resource.data.reason.size() <= 300;
       allow delete: if isAdmin();
     }
-
-    // Audit log: append-only, visible to supervisors only
     match /admin_logs/{logId} {
       allow read: if isAdmin();
-      allow create: if isAdmin() &&
-        request.resource.data.keys().hasOnly(['action', 'target', 'details', 'by', 'at']) &&
-        request.resource.data.by == request.auth.token.email.lower() &&
-        request.resource.data.action is string && request.resource.data.action.size() <= 80;
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly(['action', 'target', 'details', 'by', 'at']) &&
+        request.resource.data.by == request.auth.token.email.lower() && request.resource.data.action is string && request.resource.data.action.size() <= 80;
       allow update, delete: if false;
     }
-
-    // System config: readable by the app.
-    // Owner: full control. Moderators: announcement, pinned report and hidden reports only.
     match /config/{docId} {
       allow read: if true;
       allow create, delete: if isSuperAdmin();
-      allow update: if isSuperAdmin() || (
-        isAdmin() &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['announcement', 'pinnedImei', 'hiddenImeis', 'updatedAt'])
-      );
+      allow update: if isSuperAdmin() || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['announcement', 'pinnedImei', 'hiddenImeis', 'updatedAt']));
     }
   }
 }

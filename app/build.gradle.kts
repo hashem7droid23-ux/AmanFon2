@@ -11,17 +11,14 @@ plugins {
 android {
   namespace = "com.example"
   compileSdk = 35
-
   defaultConfig {
     applicationId = "com.aistudio.lostphone.ymndx"
     minSdk = 24
     targetSdk = 34
-    versionCode = 8
-    versionName = "1.7"
-
+    versionCode = 9
+    versionName = "1.8"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
-
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
@@ -41,13 +38,10 @@ android {
       enableV2Signing = true
     }
   }
-
   buildTypes {
     release {
       isCrunchPngs = false
-      // R8: shrinking + obfuscation + log stripping (see proguard-rules.pro)
       isMinifyEnabled = true
-      // Resource shrinking stays off: default_web_client_id is resolved dynamically via getIdentifier()
       isShrinkResources = false
       isDebuggable = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -59,19 +53,11 @@ android {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
   }
-  buildFeatures {
-    compose = true
-    buildConfig = true
-  }
+  buildFeatures { compose = true; buildConfig = true }
   testOptions { unitTests { isIncludeAndroidResources = true } }
-  dependenciesInfo {
-    includeInApk = false
-    includeInBundle = true
-  }
+  dependenciesInfo { includeInApk = false; includeInBundle = true }
   packaging {
-    jniLibs {
-      useLegacyPackaging = true
-    }
+    jniLibs { useLegacyPackaging = true }
     resources {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
       excludes += "META-INF/*.version"
@@ -80,29 +66,19 @@ android {
       excludes += "META-INF/INDEX.LIST"
     }
   }
+  // Existing CI invokes assembleDebug. Its finalizer runs regression tests before publishing.
+  project.tasks.matching { name == "assembleDebug" }.configureEach { finalizedBy("testDebugUnitTest") }
 }
-
-// Configure the Secrets Gradle Plugin to use .env and .env.example files
-// to match the convention used in Web projects.
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
 }
-
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
-
-// Some unused dependencies are commented out below instead of being removed.
-// This makes it easy to add them back in the future if needed.
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.firebase.bom))
-  // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
-  // implementation(libs.androidx.camera.camera2)
-  // implementation(libs.androidx.camera.core)
-  // implementation(libs.androidx.camera.lifecycle)
-  // implementation(libs.androidx.camera.view)
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
@@ -110,34 +86,27 @@ dependencies {
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
-  // implementation(libs.androidx.datastore.preferences)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
-  // implementation(libs.androidx.navigation.compose)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
-  // implementation(libs.coil.compose)
   implementation(libs.converter.moshi)
   implementation(libs.firebase.ai)
-  // Firestore & Authentication & FCM
   implementation(libs.firebase.firestore)
   implementation(libs.firebase.auth)
   implementation(libs.firebase.messaging)
   implementation(libs.androidx.credentials)
   implementation(libs.androidx.credentials.play.services)
   implementation(libs.googleid)
-  // Google code scanner: IMEI / serial barcodes, no camera permission needed
   implementation(libs.play.services.code.scanner)
   implementation(libs.firebase.appcheck.recaptcha)
-  // The App Check debug provider must never ship in production builds
   debugImplementation(libs.firebase.appcheck.debug)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
-  // implementation(libs.play.services.location)
   implementation(libs.retrofit)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
