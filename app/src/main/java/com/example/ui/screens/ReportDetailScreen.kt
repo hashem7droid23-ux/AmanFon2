@@ -66,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.components.ReportPhotosGallery
 import com.example.ui.components.StatusBadge
 import com.example.ui.components.formatAmount
 import com.example.ui.components.formatRelativeTime
@@ -226,6 +227,9 @@ fun ReportDetailScreen(
                 }
             }
 
+            // ===== Photos (if any) =====
+            ReportPhotosGallery(imei = item.imei1)
+
             // ===== IMEI =====
             Section(Icons.Default.Shield, "الأرقام التسلسلية") {
                 ImeiRow("IMEI 1", item.imei1, highlight = item.isStolen) {
@@ -238,7 +242,12 @@ fun ReportDetailScreen(
                         Toast.makeText(context, "تم نسخ رقم IMEI", Toast.LENGTH_SHORT).show()
                     }
                 }
-                if (item.serialNumber.isNotBlank()) KV("الرقم التسلسلي", item.serialNumber)
+                if (item.serialNumber.isNotBlank()) {
+                    ImeiRow("الرقم التسلسلي S/N", item.serialNumber, highlight = false) {
+                        clipboardManager.setText(AnnotatedString(item.serialNumber))
+                        Toast.makeText(context, "تم نسخ الرقم التسلسلي", Toast.LENGTH_SHORT).show()
+                    }
+                }
                 if (item.color.isNotBlank()) KV("اللون", item.color)
                 if (item.distinctiveMarks.isNotBlank()) KV("علامات فارقة", item.distinctiveMarks)
             }

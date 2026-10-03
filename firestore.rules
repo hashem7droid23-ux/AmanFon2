@@ -144,6 +144,23 @@ service cloud.firestore {
       allow delete: if isOwner(userId) || isAdmin();
     }
 
+    // Phone photos attached to a report (compressed JPEG, base64), keyed by IMEI
+    function isValidPhotos(data, imei) {
+      return data.keys().hasOnly(['userId', 'imei', 'photos', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.imei == imei &&
+             data.photos is list && data.photos.size() >= 1 && data.photos.size() <= 3;
+    }
+
+    match /report_photos/{imei} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPhotos(request.resource.data, imei);
+      allow update: if isAdmin() ||
+                    (isAuthenticated() && resource.data.userId == request.auth.uid &&
+                     isValidPhotos(request.resource.data, imei));
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
     // Cloud bans: every signed-in app checks them, only supervisors manage them
     match /bans/{banKey} {
       allow read: if isAuthenticated();
