@@ -190,6 +190,38 @@ object FirebaseAuthManager {
         user
     }.recoverCatching { throw Exception(mapAuthError(it)) }
 
+    /** Re-sends the activation link to the signed-in email user. */
+    suspend fun resendVerificationEmail(): Result<Unit> = runCatching {
+        val user = Firebase.auth.currentUser ?: throw IllegalStateException("سجّل الدخول أولاً")
+        user.reload().await()
+        if (user.isEmailVerified) return@runCatching Unit
+        user.sendEmailVerification().await()
+        Unit
+    }.recoverCatching { throw Exception(mapAuthError(it)) }
+
+    /**
+     * Reloads the user from Firebase (picks up a clicked activation link) and refreshes the ID token
+     * so Firestore rules see email_verified = true. Returns true when the email is verified.
+     */
+    suspend fun refreshUser(): Boolean {
+        val user = Firebase.auth.currentUser ?: return false
+        return try {
+            val wasVerified = user.isEmailVerified
+            user.reload().await()
+            val fresh = Firebase.auth.currentUser ?: return false
+            if (fresh.isEmailVerified && !wasVerified) {
+                fresh.getIdToken(true).await()
+                // Same FirebaseUser instance: force observers (UI cards, admin checks) to re-read it
+                _currentUser.value = null
+                _currentUser.value = fresh
+            }
+            fresh.isEmailVerified
+        } catch (e: Exception) {
+            Log.w(TAG, "refreshUser failed: ${e.message}")
+            false
+        }
+    }
+
     suspend fun sendPasswordReset(email: String): Result<Unit> = runCatching {
         Firebase.auth.sendPasswordResetEmail(email.trim()).await()
         Unit
