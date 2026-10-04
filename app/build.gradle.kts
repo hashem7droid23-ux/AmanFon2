@@ -7,7 +7,6 @@ plugins {
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
 }
-
 android {
   namespace = "com.example"
   compileSdk = 35
@@ -15,8 +14,8 @@ android {
     applicationId = "com.aistudio.lostphone.ymndx"
     minSdk = 24
     targetSdk = 34
-    versionCode = 9
-    versionName = "1.8"
+    versionCode = 10
+    versionName = "1.9"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
   signingConfigs {
@@ -49,10 +48,7 @@ android {
     }
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
-  compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-  }
+  compileOptions { sourceCompatibility = JavaVersion.VERSION_11; targetCompatibility = JavaVersion.VERSION_11 }
   buildFeatures { compose = true; buildConfig = true }
   testOptions { unitTests { isIncludeAndroidResources = true } }
   dependenciesInfo { includeInApk = false; includeInBundle = true }
@@ -66,14 +62,9 @@ android {
       excludes += "META-INF/INDEX.LIST"
     }
   }
-  // Existing CI invokes assembleDebug. Its finalizer runs regression tests before publishing.
   project.tasks.matching { name == "assembleDebug" }.configureEach { finalizedBy("testDebugUnitTest") }
 }
-secrets {
-  propertiesFileName = ".env"
-  defaultPropertiesFileName = ".env.example"
-  ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
-}
+secrets { propertiesFileName = ".env"; defaultPropertiesFileName = ".env.example"; ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN") }
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
