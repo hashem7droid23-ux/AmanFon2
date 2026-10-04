@@ -1,30 +1,75 @@
-# Production signing and update publication
+# تجهيز النسخة الرسمية من أمان فون
 
-Status: update-check feature implemented; current workflow still publishes DEBUG. Nothing here changes signing credentials, configures GitHub Secrets, publishes a production APK or guarantees upgrade compatibility.
+## الحالة الحالية
 
-## One-time setup by the repository owner
+تم تجهيز سكربت إنشاء المفتاح الخاص وقالب بناء نسخة Release. لم يُنشأ مفتاح خاص بواسطة المساعد، ولم تُضبط GitHub Secrets، ولم يُفعّل القالب أو تُنشر نسخة رسمية. البناء الحالي ما زال ينشر نسخة Debug. لا يكفي تغيير اسم ملف APK لجعله رسميًا.
 
-1. Generate a private release keystore on a trusted machine and keep a secure backup. Do not reuse the publicly committed debug key for public production distribution. Never post the keystore or passwords in chat or commit them.
-2. Configure GitHub Actions secrets: RELEASE_KEYSTORE_BASE64, STORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS. Decode the secret to a temporary file and export KEYSTORE_PATH, STORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS for Gradle. The existing release configuration reads those environment variables.
-3. Register the release certificate SHA-1/SHA-256 in Firebase and the correct Android OAuth client for com.aistudio.lostphone.ymndx. Refresh google-services.json if required. Verify Google OAuth audience, enabled login providers and production App Check separately; do not disable enforcement to hide errors.
-4. Have a workflow-authorized maintainer change .github/workflows/build-apk.yml to run tests, lint and assembleRelease. Fail if signing secrets are missing; never generate a random fallback key. Upload only the signed release APK as AmanPhone.apk.
-5. Test login, photos and reports on real devices and inspect the APK with apksigner verify --verbose --print-certs. Confirm package name, versionCode and that the APK is not debuggable.
+## 1. إنشاء المفتاح على جهازك
 
-## Existing debug installations
+على كمبيوتر موثوق يعمل بـ Linux أو macOS، ثبّت JDK 17 وGitHub CLI، واسحب أحدث نسخة من المستودع. نفّذ:
 
-A new production key normally cannot update existing debug-signed installations in place. Users may need a one-time uninstall/install transition, which removes local app data. Verify important reports are published before migration. Do not instruct users to uninstall without explaining the loss and confirming their data. Future production updates must use the same private signing key, package ID and increasing versionCode. Test an actual upgrade on a device; tests alone do not certify it.
+```bash
+bash ci/setup-production-key.sh
+```
 
-## Publish update notices only after successful APK publication
+السكربت ينشئ مفتاح RSA داخل مجلد خاص في حسابك، خارج المستودع. يطلب كلمة مرور لا تظهر أثناء الكتابة، ويطبع بصمات الشهادة العامة. لا يعرض المفتاح أو كلمة مروره. إذا وجد مفتاحًا سابقًا يتوقف بدل استبداله.
 
-The app reads update.json from main and verifies its APK SHA-256 digest, byte size and URL against the uploaded asset in GitHub release v1.0-apk. It also checks the installed signing certificate, package and build channel. Missing data, wrong key, wrong digest, drafts, incompatible channels and network failures do not prompt a download.
+احتفظ بنسخة احتياطية مشفرة من المفتاح وكلمة مروره. فقدان المفتاح قد يمنع تحديث النسخ الرسمية مستقبلًا. لا ترفع ملف المفتاح إلى GitHub ولا ترسله في المحادثات أو إلى AI Studio.
 
-For each release:
+اختياريًا، بعد `gh auth login` يمكنك كتابة `UPLOAD` عندما يسأل السكربت لإضافة الأسرار إلى المستودع. يقوم السكربت برفع:
 
-- Increase versionCode/versionName in app/build.gradle.kts. Use user-visible release notes, not internal implementation details.
-- Build, test, verify the APK certificate and upload the exact APK first. Serialize publication jobs so an older build cannot overwrite a newer APK.
-- After the APK upload succeeds, update the matching debug or production object in update.json: enabled=true, actual versionCode/versionName, signerSha256 (certificate SHA-256, 64 hex characters without colons), apkSha256 (actual APK SHA-256), apkBytes (actual size), exact GitHub asset downloadUrl and Arabic releaseNotes. Never activate values from a build that has not been published.
-- Use GitHub release asset metadata to verify digest and size. update.json must describe the actual uploaded APK, not just the current source version.
-- Changing update.json on main currently triggers another build. For reliable automation, add workflow path filters that exclude metadata/docs-only updates or publish the metadata through a separate non-recursive process, preserving tests on code changes. A regenerated APK with a different digest will fail the updater gate until the manifest matches it.
-- Replace the workflow's static release body with generated user-facing notes using body_path. This workflow change still requires appropriate GitHub authorization. Do not claim this link is configured until tested.
+- `RELEASE_KEYSTORE_BASE64`
+- `STORE_PASSWORD`
+- `KEY_PASSWORD`
+- `KEY_ALIAS`
+- `RELEASE_CERT_SHA256`
 
-update.json intentionally starts disabled: no compatible newer published binary is being advertised yet. Users of 1.9 will see notices for future activated releases, not for 1.9 itself. The check runs when entering the foreground, at most once per 15 minutes per process; it is not a background push notification. Later postpones reminders for 24 hours. Download opens the direct HTTPS APK URL in a browser, and Android installation remains user-approved. The updater does not download or install silently and does not inspect the downloaded APK itself; certificate compatibility is checked from release metadata and Android checks signatures at installation.
+رفع الأسرار لا ينشر التطبيق ولا يغير Firebase. إذا لم تكمل الرفع، أضفها من Settings > Secrets and variables > Actions في المستودع. محتوى RELEASE_KEYSTORE_BASE64 هو ترميز Base64 للمفتاح، وبصمة RELEASE_CERT_SHA256 هي 64 خانة hex دون فواصل؛ لا تخلطها مع SHA-256 لملف APK.
+
+## 2. تسجيل شهادة الإنتاج في Firebase
+
+أضف SHA-1 وSHA-256 اللتين أظهرهما السكربت لتطبيق Android ذي الحزمة `com.aistudio.lostphone.ymndx` في المشروع `gen-lang-client-0428838696`. تحقق أيضًا من عميل OAuth Android وبصمة توقيعه. حدّث `app/google-services.json` من Firebase إذا احتاجت إعدادات العميل ذلك.
+
+تحقق من نشر شاشة موافقة Google وطرق تسجيل الدخول ومن إعدادات App Check للإنتاج. لا تعطل الحماية لإخفاء خطأ؛ سجل تطبيق الإنتاج بطريقة مناسبة ثم اختبره. لا حاجة لتغيير قواعد البلاغات لمجرد إضافة مفتاح توقيع.
+
+## 3. تفعيل بناء النسخة الرسمية من حسابك
+
+أنشئ GitHub Environment باسم `production` وفعّل الموافقة اليدوية إذا كانت خطتك تدعمها. من حساب لديه صلاحية تعديل GitHub Actions، انسخ محتوى:
+
+`ci/production-build.yml.example`
+
+إلى:
+
+`.github/workflows/production-build.yml`
+
+هذا القالب جاهز كنقطة بدء وليس بناءً تم اختباره في المستودع حتى الآن. يتطلب وجود `app/google-services.json` الصحيح في مسار البناء. شغله يدويًا من Actions على main. يتوقف عند غياب الأسرار، ويتحقق من شهادة التوقيع والحزمة وأن APK غير قابل للتصحيح، ويشغّل اختبارات Release وLint. لا يولّد مفتاحًا بديلًا ولا ينشر تلقائيًا للعامة.
+
+حمّل Artifact باسم `AmanPhone-production-candidate` وافك ضغطه للحصول على `AmanPhone.apk`. اختبر تسجيل الدخول والصور والبلاغات على جهازين قبل النشر. قد يكشف بناء Release مشاكل تحتاج إصلاحًا في R8 أو App Check لم تظهر في Debug.
+
+## 4. الانتقال من التجريبية والتحديثات اللاحقة
+
+المفتاح الخاص الجديد يختلف عن المفتاح التجريبي الحالي؛ لا تفترض أن أول نسخة رسمية ستثبت فوق التجريبية. قد تحتاج انتقالًا لمرة واحدة بحذف التجريبية، وهو يمسح بياناتها المحلية. تأكد من نشر بلاغاتك وصورك المهمة ومن إمكانية الدخول قبل اتخاذ هذه الخطوة، ولا تحذف بيانات المستخدمين تلقائيًا.
+
+بعد أول نسخة رسمية، استخدم المفتاح الخاص نفسه والحزمة نفسها مع زيادة `versionCode` لكل إصدار. اختبر تثبيت الإصدار التالي فوق الرسمي السابق للتحقق من الاحتفاظ بالبيانات.
+
+## 5. نشر الإصدار وتفعيل تنبيه التحديث
+
+بعد اجتياز اختبار الأجهزة، انشر APK الرسمي ومميزات الإصدار للمستخدم على صفحة `v1.0-apk`. يجب أن يستبدل مسؤول GitHub نص الوصف الثابت بملف ملاحظات إصدار ويضبط البناء الحالي حتى لا يستبدل APK أو وصف الإنتاج بملفات Debug. لا تنشر من عمليتي بناء متعارضتين؛ رتّب النشر حسب رقم الإصدار وتحقق أن main لم يتحرك إلى إصدار آخر قبل الإعلان.
+
+لا تعلن إصدارًا قبل رفع ملفه. بعد النشر، فعّل قسم `production` في `update.json` مع:
+
+- رقم الإصدار الحقيقي واسمه والحزمة و`channel: production`.
+- `signerSha256`: بصمة شهادة APK التي تم التحقق منها.
+- `apkSha256`: SHA-256 لملف APK المنشور نفسه.
+- `apkBytes`: حجم الملف بالبايت.
+- `downloadUrl`: رابط الأصل المباشر في مستودع المشروع.
+- `releaseNotes`: مميزات مفهومة للمستخدم، دون تفاصيل البرمجة.
+- `enabled: true` بعد التحقق من النشر.
+
+البرنامج يطابق رابط الأصل وحجمه وبصمته مع GitHub، ويقارن توقيع النسخة المثبتة والقناة ورقم الإصدار قبل عرض التنبيه. لا تقترح نسخة إنتاج ذات مفتاح مختلف على مستخدمي Debug كتحديث مباشر.
+
+تعديل update.json على main يشغّل البناء الحالي أيضًا. قبل أتمتة التفعيل، أضف استثناءات للمسارات الخاصة بالبيانات والتوثيق أو آلية نشر منفصلة غير متكررة. لا تحدّث بصمة APK بقيمة من بناء مختلف. القالب المرفق لا ينفذ هذه الأتمتة ولا يعدّل صفحة الإصدار.
+
+## حدود التنبيه
+
+الميزة موجودة بدءًا من 1.9؛ مستخدمو 1.8 يحتاجون تحميل النسخة التي تحتوي عليها أولًا. التنبيه يفحص توفر إصدار عند فتح التطبيق مع الإنترنت، وليس إشعارًا فوريًا والتطبيق مغلق. خيار لاحقًا يؤجل التذكير يومًا، والتنزيل يفتح رابط APK في المتصفح، والتثبيت يحتاج موافقة المستخدم. حاليًا إعلانات الإصدارات معطلة إلى حين إكمال النشر وتطابق بيانات الملف.

@@ -1,0 +1,83 @@
+# TEMPLATE ONLY: owner copies this to .github/workflows/production-build.yml.
+# Build and device-test first. This workflow deliberately does NOT publish to the public release.
+name: Build signed production candidate
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: aman-phone-production-candidate
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Restore private release key
+        shell: bash
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          RELEASE_CERT_SHA256: ${{ secrets.RELEASE_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          set +x
+          umask 077
+          for name in RELEASE_KEYSTORE_BASE64 STORE_PASSWORD KEY_PASSWORD KEY_ALIAS RELEASE_CERT_SHA256; do
+            test -n "${!name}" || { echo "Missing required signing secret: $name"; exit 1; }
+          done
+          key="$RUNNER_TEMP/aman-phone-production.p12"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$key"
+          keytool -exportcert -keystore "$key" -storepass:env STORE_PASSWORD -alias "$KEY_ALIAS" -file "$RUNNER_TEMP/release-cert.der"
+          actual=$(sha256sum "$RUNNER_TEMP/release-cert.der" | cut -d ' ' -f1)
+          expected=$(printf '%s' "$RELEASE_CERT_SHA256" | tr '[:upper:]' '[:lower:]' | tr -d ':[:space:]')
+          test "$actual" = "$expected" || { echo 'Signing certificate mismatch'; exit 1; }
+          echo "KEYSTORE_PATH=$key" >> "$GITHUB_ENV"
+      - name: Require Firebase client configuration
+        run: |
+          test -f app/google-services.json || { echo 'Provide app/google-services.json for the correct Firebase project before building'; exit 1; }
+      - name: Test and build release
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          chmod +x gradlew
+          ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
+      - name: Verify APK signature, identity and build flags
+        env:
+          RELEASE_CERT_SHA256: ${{ secrets.RELEASE_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          apk=app/build/outputs/apk/release/app-release.apk
+          "$tools/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/apk-verification.txt"
+          cat "$RUNNER_TEMP/apk-verification.txt"
+          actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/apk-verification.txt" | tr '[:upper:]' '[:lower:]' | tr -d ':[:space:]')
+          expected=$(printf '%s' "$RELEASE_CERT_SHA256" | tr '[:upper:]' '[:lower:]' | tr -d ':[:space:]')
+          test -n "$actual" && test "$actual" = "$expected"
+          "$tools/aapt" dump badging "$apk" > "$RUNNER_TEMP/apk-badging.txt"
+          grep -q "package: name='com.aistudio.lostphone.ymndx'" "$RUNNER_TEMP/apk-badging.txt"
+          if grep -q 'application-debuggable' "$RUNNER_TEMP/apk-badging.txt"; then echo 'Debuggable APK rejected'; exit 1; fi
+          mkdir -p release-output
+          cp "$apk" release-output/AmanPhone.apk
+          sha256sum release-output/AmanPhone.apk > release-output/SHA256SUMS.txt
+          cp "$RUNNER_TEMP/apk-badging.txt" release-output/package-info.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AmanPhone-production-candidate
+          path: release-output/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Remove temporary private key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/aman-phone-production.p12"
