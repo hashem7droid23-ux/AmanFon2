@@ -20,8 +20,9 @@ import org.json.JSONObject
 import java.net.URI
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import java.io.ByteArrayOutputStream
+import java.lang.ref.WeakReference
 
-/** Pure validation rules shared by the updater and regression tests. */
 object UpdatePolicy {
     private const val ROOT = "/hashem7droid23-ux/AmanFon2/releases/download/"
     fun trustedDownload(url: String): Boolean = try {
@@ -42,12 +43,13 @@ object UpdatePolicy {
             assetUrl == url && assetBytes == bytes && digest.equals("sha256:$sha256", true)
 }
 
-/** Checks only on foreground entry. No account or report data is sent to GitHub. */
+/** Foreground checks; GitHub receives no account or report data. */
 object AppUpdater {
     private val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS).callTimeout(25, TimeUnit.SECONDS).build()
     private var checking = false
     private var dialog: AlertDialog? = null
+    private var owner: WeakReference<ComponentActivity>? = null
     private var lastCheck = 0L
     private var shownCode = 0
     private val api = "https://api.github.com/repos/hashem7droid23-ux/AmanFon2/releases/tags/v1.0-apk"
@@ -60,9 +62,17 @@ object AppUpdater {
             check(response.isSuccessful)
             val body = response.body ?: error("Missing body")
             check(body.contentLength() <= 262144)
-            val text = body.source().readUtf8(262145)
-            check(text.length <= 262144)
-            return JSONObject(text)
+            val output = ByteArrayOutputStream()
+            body.byteStream().use { input ->
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    check(output.size() + count <= 262144)
+                    output.write(buffer, 0, count)
+                }
+            }
+            return JSONObject(output.toString("UTF-8"))
         }
     }
     @Suppress("DEPRECATION")
@@ -112,20 +122,22 @@ object AppUpdater {
                 if (System.currentTimeMillis() < preferences.getLong("later_${update.code}", 0)) return@launch
                 shownCode = update.code
                 fun later() { preferences.edit().putLong("later_${update.code}", System.currentTimeMillis() + 24 * 60 * 60 * 1000L).apply() }
-                dialog = AlertDialog.Builder(activity).setTitle("إصدار جديد من أمان فون: ${update.name}")
+                owner = WeakReference(activity)
+                val created = AlertDialog.Builder(activity).setTitle("إصدار جديد من أمان فون: ${update.name}")
                     .setMessage("الجديد في هذا الإصدار:\n\n${update.notes}\n\nحمّل الملف ثم افتحه ووافق على التثبيت. لا تحذف التطبيق الحالي؛ يجب أن يكون التحديث بنفس التوقيع.")
                     .setPositiveButton("تحميل التحديث") { _, _ ->
                         try { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(update.url))) }
                         catch (_: Exception) { Toast.makeText(activity, "تعذر فتح رابط التحميل، تأكد من وجود متصفح", Toast.LENGTH_LONG).show() }
                     }.setNegativeButton("لاحقًا") { _, _ -> later() }.setOnCancelListener { later() }.create()
-                dialog?.setOnDismissListener { dialog = null }
-                dialog?.show()
+                dialog = created
+                created.setOnDismissListener { if (dialog === created) { dialog = null; owner = null } }
+                created.show()
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { /* Update-check failures never block normal use. */ }
+            catch (_: Exception) { /* Failed checks never block the app. */ }
             finally { checking = false }
         }
     }
     fun release(activity: ComponentActivity) {
-        if (dialog?.context == activity) { dialog?.dismiss(); dialog = null }
+        if (owner?.get() === activity) { dialog?.dismiss(); dialog = null; owner = null }
     }
 }
