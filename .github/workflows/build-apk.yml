@@ -1,12 +1,24 @@
-name: Build Aman Phone APK
+name: Build Aman Phone APK (CI / Debug)
 
 on:
   push:
     branches: [ "main", "master" ]
-    tags:
-      - "v*"
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'update.json'
+      - 'RELEASE_NOTES.md'
+      - 'ci/**'
+      - '.github/**'
   pull_request:
     branches: [ "main", "master" ]
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'update.json'
+      - 'RELEASE_NOTES.md'
+      - 'ci/**'
+      - '.github/**'
   workflow_dispatch:
 
 jobs:
@@ -15,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
+      contents: read
 
     steps:
       - name: Checkout Code
@@ -103,26 +115,3 @@ jobs:
           name: AmanPhone-debug-apk
           path: release-output/AmanPhone-debug.apk
           retention-days: 30
-
-      - name: Publish Direct APK to GitHub Releases
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release-output/AmanPhone-debug.apk
-          name: "📱 تطبيق أمان فون - ملف APK جاهز للتثبيت المباشر"
-          tag_name: "v1.0-apk"
-          make_latest: "true"
-          draft: false
-          prerelease: false
-          body: |
-            ## 📱 تطبيق أمان فون (Aman Phone)
-            المنظومة الوطنية لتتبع وحماية الهواتف المفقودة والمسروقة في الجمهورية اليمنية 🇾🇪
-            
-            ### 👨‍💻 المطور والمصمم:
-            - **المهندس:** هاشم القديمي (Hashem Al-Qodimy)
-            - **صفحة فيسبوك:** [HashemAlQodimy](https://www.facebook.com/HashemAlQodimy)
-            
-            ### 📥 التحميل المباشر (ملف APK جاهز بدون ضغط):
-            - اضغط على الرابط بالأسفل: **`AmanPhone-debug.apk`** لتحميل وتثبيت التطبيق مباشرة وبدون الحاجة لفك الضغط.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

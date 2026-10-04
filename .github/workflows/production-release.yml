@@ -1,0 +1,450 @@
+name: Build and Publish Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_to_release:
+        description: "Publish verified APK publicly to v1.0-apk"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aman-phone-production-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: v1.0-apk
+      EXPECTED_PACKAGE: com.aistudio.lostphone.ymndx
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Restore and verify private signing key
+        shell: bash
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          RELEASE_CERT_SHA256: ${{ secrets.RELEASE_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          set +x
+          umask 077
+
+          for name in RELEASE_KEYSTORE_BASE64 STORE_PASSWORD KEY_PASSWORD KEY_ALIAS RELEASE_CERT_SHA256; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing signing secret: $name"
+              exit 1
+            fi
+          done
+
+          key="$RUNNER_TEMP/aman-phone-production.p12"
+          cert="$RUNNER_TEMP/release-cert.der"
+
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$key"
+
+          keytool -exportcert \
+            -keystore "$key" \
+            -storepass:env STORE_PASSWORD \
+            -alias "$KEY_ALIAS" \
+            -file "$cert"
+
+          actual=$(sha256sum "$cert" | cut -d ' ' -f1)
+          expected=$(printf '%s' "$RELEASE_CERT_SHA256" \
+            | tr '[:upper:]' '[:lower:]' \
+            | tr -d ':[:space:]')
+
+          [[ "$expected" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "::error::Invalid certificate SHA-256"
+            exit 1
+          }
+
+          [[ "$actual" == "$expected" ]] || {
+            echo "::error::Signing certificate mismatch"
+            exit 1
+          }
+
+          echo "KEYSTORE_PATH=$key" >> "$GITHUB_ENV"
+          echo "VERIFIED_SIGNER_SHA256=$actual" >> "$GITHUB_ENV"
+
+      - name: Require Firebase configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s app/google-services.json || {
+            echo "::error::Missing app/google-services.json"
+            exit 1
+          }
+
+      - name: Run release tests, lint and build
+        shell: bash
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
+
+      - name: Verify APK and prepare release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -n "$sdk"
+
+          tools=$(find "$sdk/build-tools" \
+            -mindepth 1 -maxdepth 1 -type d \
+            | sort -V | tail -1)
+
+          test -x "$tools/apksigner"
+          test -x "$tools/aapt"
+
+          apk="app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+
+          "$tools/apksigner" verify --verbose --print-certs "$apk" \
+            > "$RUNNER_TEMP/apk-verification.txt"
+
+          "$tools/aapt" dump badging "$apk" \
+            > "$RUNNER_TEMP/apk-badging.txt"
+
+          mkdir -p release-output
+          cp "$apk" release-output/AmanPhone.apk
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+
+          temp = pathlib.Path(os.environ["RUNNER_TEMP"])
+          verification = (temp / "apk-verification.txt").read_text(
+              encoding="utf-8"
+          )
+          certificates = re.findall(
+              r"^Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]+)$",
+              verification,
+              re.MULTILINE,
+          )
+          expected = os.environ["VERIFIED_SIGNER_SHA256"]
+
+          if len(certificates) != 1 or certificates[0].lower() != expected:
+              raise SystemExit("APK signing certificate mismatch")
+
+          badging = (temp / "apk-badging.txt").read_text(
+              encoding="utf-8"
+          )
+          package_line = next(
+              (line for line in badging.splitlines()
+               if line.startswith("package:")),
+              "",
+          )
+
+          def field(name):
+              match = re.search(
+                  rf"\b{re.escape(name)}='([^']*)'",
+                  package_line,
+              )
+              if not match:
+                  raise SystemExit(f"Missing APK field: {name}")
+              return match.group(1)
+
+          package = field("name")
+          code_text = field("versionCode")
+          version = field("versionName")
+
+          if package != os.environ["EXPECTED_PACKAGE"]:
+              raise SystemExit("Wrong Android package")
+          if not code_text.isascii() or not code_text.isdigit():
+              raise SystemExit("Invalid versionCode")
+          code = int(code_text)
+          if code <= 0 or not version.strip():
+              raise SystemExit("Invalid APK version")
+          if "application-debuggable" in badging:
+              raise SystemExit("Debuggable APK rejected")
+
+          notes = pathlib.Path("RELEASE_NOTES.md").read_text(
+              encoding="utf-8"
+          ).strip()
+          if not notes:
+              raise SystemExit("Release notes are empty")
+          if len(notes) > 6000:
+              raise SystemExit("Keep release notes within 6000 characters")
+
+          apk = pathlib.Path("release-output/AmanPhone.apk")
+          digest = hashlib.sha256(apk.read_bytes()).hexdigest()
+
+          metadata = {
+              "enabled": True,
+              "channel": "production",
+              "packageName": package,
+              "versionCode": code,
+              "versionName": version,
+              "signerSha256": expected,
+              "apkSha256": digest,
+              "apkBytes": apk.stat().st_size,
+              "downloadUrl": (
+                  f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
+                  f"/releases/download/{os.environ['RELEASE_TAG']}"
+                  "/AmanPhone.apk"
+              ),
+              "releaseNotes": notes,
+          }
+
+          (temp / "verified-production.json").write_text(
+              json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          pathlib.Path("release-output/SHA256SUMS.txt").write_text(
+              f"{digest}  AmanPhone.apk\n",
+              encoding="utf-8",
+          )
+          pathlib.Path("release-output/package-info.txt").write_text(
+              badging,
+              encoding="utf-8",
+          )
+
+          print(f"Verified release candidate: {version} (code {code})")
+          PY
+
+      - name: Upload candidate for device testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmanPhone-production-candidate
+          path: release-output/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Check latest source and production version
+        if: ${{ inputs.publish_to_release }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch origin main
+          remote_sha=$(git rev-parse origin/main)
+
+          [[ "$remote_sha" == "$GITHUB_SHA" ]] || {
+            echo "::error::main changed during the build. Build the latest source."
+            exit 1
+          }
+
+          git show origin/main:update.json \
+            > "$RUNNER_TEMP/latest-update.json"
+
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          temp = pathlib.Path(os.environ["RUNNER_TEMP"])
+          latest = json.loads(
+              (temp / "latest-update.json").read_text(encoding="utf-8")
+          )
+          new = json.loads(
+              (temp / "verified-production.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          if latest.get("schemaVersion") != 1:
+              raise SystemExit("Unsupported update metadata schema")
+
+          old = latest.get("production", {})
+          if old.get("enabled") is True:
+              previous_code = old.get("versionCode")
+              if type(previous_code) is not int:
+                  raise SystemExit("Invalid published production version")
+              if new["versionCode"] <= previous_code:
+                  raise SystemExit(
+                      "New versionCode must exceed the published version"
+                  )
+              previous_signer = str(
+                  old.get("signerSha256", "")
+              ).lower()
+              if previous_signer != new["signerSha256"]:
+                  raise SystemExit(
+                      "Production signing key changed; publication blocked"
+                  )
+
+          print("Latest source and production metadata passed")
+          PY
+
+      - name: Publish official APK and release notes
+        if: ${{ inputs.publish_to_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-output/AmanPhone.apk
+            release-output/SHA256SUMS.txt
+          name: "أمان فون | الإصدار الرسمي"
+          tag_name: v1.0-apk
+          make_latest: "true"
+          draft: false
+          prerelease: false
+          body_path: RELEASE_NOTES.md
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify published APK against GitHub
+        if: ${{ inputs.publish_to_release }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import time
+          import urllib.request
+
+          temp = pathlib.Path(os.environ["RUNNER_TEMP"])
+          expected = json.loads(
+              (temp / "verified-production.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          url = (
+              f"https://api.github.com/repos/"
+              f"{os.environ['GITHUB_REPOSITORY']}"
+              f"/releases/tags/{os.environ['RELEASE_TAG']}"
+          )
+          error = "No verification response"
+
+          for attempt in range(6):
+              try:
+                  request = urllib.request.Request(
+                      url,
+                      headers={
+                          "Accept": "application/vnd.github+json",
+                          "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                          "X-GitHub-Api-Version": "2022-11-28",
+                          "User-Agent": "AmanPhone-ReleaseVerifier",
+                          "Cache-Control": "no-cache",
+                      },
+                  )
+                  with urllib.request.urlopen(
+                      request, timeout=20
+                  ) as response:
+                      release = json.load(response)
+
+                  if release.get("draft") or release.get("prerelease"):
+                      raise ValueError("Release is not public production")
+
+                  assets = [
+                      asset
+                      for asset in release.get("assets", [])
+                      if asset.get("name") == "AmanPhone.apk"
+                  ]
+                  if len(assets) != 1:
+                      raise ValueError("Expected exactly one APK asset")
+
+                  asset = assets[0]
+                  if asset.get("state") != "uploaded":
+                      raise ValueError("APK upload is incomplete")
+                  if asset.get("size") != expected["apkBytes"]:
+                      raise ValueError("APK byte size mismatch")
+                  if asset.get("browser_download_url") != expected["downloadUrl"]:
+                      raise ValueError("APK download URL mismatch")
+
+                  digest = asset.get("digest")
+                  wanted = "sha256:" + expected["apkSha256"]
+                  if not isinstance(digest, str) or digest.lower() != wanted:
+                      raise ValueError("Missing or mismatched APK digest")
+
+                  print("Published APK verified")
+                  break
+              except Exception as exc:
+                  error = str(exc)
+                  if attempt == 5:
+                      raise SystemExit(
+                          f"Publication verification failed: {error}"
+                      )
+                  time.sleep(10)
+          PY
+
+      - name: Activate update notice without force push
+        if: ${{ inputs.publish_to_release }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch origin main
+          remote_sha=$(git rev-parse origin/main)
+
+          [[ "$remote_sha" == "$GITHUB_SHA" ]] || {
+            echo "::error::APK was uploaded, but main changed. Update notice was NOT activated. Review publication before retrying."
+            exit 1
+          }
+
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          temp = pathlib.Path(os.environ["RUNNER_TEMP"])
+          update_path = pathlib.Path("update.json")
+          data = json.loads(update_path.read_text(encoding="utf-8"))
+          verified = json.loads(
+              (temp / "verified-production.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          if data.get("schemaVersion") != 1:
+              raise SystemExit("Unsupported update metadata schema")
+
+          data["production"] = verified
+          update_path.write_text(
+              json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add update.json
+
+          if git diff --staged --quiet; then
+            echo "::error::Expected new production metadata"
+            exit 1
+          fi
+
+          git commit -m "Publish verified production update metadata [skip ci]"
+          git push origin HEAD:refs/heads/main
+
+      - name: Remove temporary signing files
+        if: always()
+        shell: bash
+        run: |
+          rm -f \
+            "$RUNNER_TEMP/aman-phone-production.p12" \
+            "$RUNNER_TEMP/release-cert.der"

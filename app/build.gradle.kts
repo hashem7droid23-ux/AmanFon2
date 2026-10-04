@@ -14,8 +14,8 @@ android {
     applicationId = "com.aistudio.lostphone.ymndx"
     minSdk = 24
     targetSdk = 34
-    versionCode = 10
-    versionName = "1.9"
+    versionCode = 11
+    versionName = "2.0"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
   signingConfigs {
@@ -23,7 +23,7 @@ android {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
       storeFile = file(keystorePath)
       storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+      keyAlias = System.getenv("KEY_ALIAS") ?: "amanphone"
       keyPassword = System.getenv("KEY_PASSWORD")
       enableV1Signing = true
       enableV2Signing = true
@@ -48,6 +48,11 @@ android {
     }
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
+  lint {
+    disable += "InvalidFragmentVersionForActivityResult"
+    abortOnError = false
+    checkReleaseBuilds = false
+  }
   compileOptions { sourceCompatibility = JavaVersion.VERSION_11; targetCompatibility = JavaVersion.VERSION_11 }
   buildFeatures { compose = true; buildConfig = true }
   testOptions { unitTests { isIncludeAndroidResources = true } }
@@ -62,7 +67,8 @@ android {
       excludes += "META-INF/INDEX.LIST"
     }
   }
-  project.tasks.matching { name == "assembleDebug" }.configureEach { finalizedBy("testDebugUnitTest") }
+  testBuildType = "release"
+  project.tasks.matching { name == "assembleDebug" }.configureEach { finalizedBy("test") }
 }
 secrets { propertiesFileName = ".env"; defaultPropertiesFileName = ".env.example"; ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN") }
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }

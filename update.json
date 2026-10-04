@@ -16,12 +16,12 @@
     "enabled": false,
     "channel": "production",
     "packageName": "com.aistudio.lostphone.ymndx",
-    "versionCode": 10,
-    "versionName": "1.9",
+    "versionCode": 11,
+    "versionName": "2.0",
     "signerSha256": "",
     "apkSha256": "",
     "apkBytes": 0,
     "downloadUrl": "https://github.com/hashem7droid23-ux/AmanFon2/releases/download/v1.0-apk/AmanPhone.apk",
-    "releaseNotes": "إشعار بالإصدارات الجديدة، ومميزات كل تحديث، ورابط تحميل مباشر."
+    "releaseNotes": "فحص الهواتف برقم IMEI ومسح الباركود، تسجيل وتوثيق بلاغات الهواتف المفقودة والمسروقة مع الصور والتواصل المباشر، وتحديثات الأمان وحماية البيانات."
   }
 }
