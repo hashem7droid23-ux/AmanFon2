@@ -1,1 +1,5 @@
-PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBGaWxlUHJvdmlkZXIgcGF0aHMgZm9yIEFQSyBmaWxlcyBkb3dubG9hZGVkIGJ5IHRoZSBpbi1hcHAgdXBkYXRlciAtLT4KPHBhdGhzPgogICAgPGV4dGVybmFsLWZpbGVzLXBhdGggbmFtZT0idXBkYXRlcyIgcGF0aD0iRG93bmxvYWQvdXBkYXRlcy8iIC8+CjwvcGF0aHM+Cg==
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider paths for APK files downloaded by the in-app updater -->
+<paths>
+    <external-files-path name="updates" path="Download/updates/" />
+</paths>
