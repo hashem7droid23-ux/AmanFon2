@@ -65,7 +65,9 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
     private val _submissionSuccessMessage = MutableStateFlow<String?>(null)
     val submissionSuccessMessage = _submissionSuccessMessage.asStateFlow()
 
-    fun finishSplash() { _currentScreen.value = AppScreen.LOGIN }
+    fun finishSplash() {
+        _currentScreen.value = if (com.example.data.remote.FirebaseAuthManager.currentUser.value != null) AppScreen.FEED else AppScreen.LOGIN
+    }
     fun navigateTo(screen: AppScreen) {
         val target = if (screen == AppScreen.LOGIN && com.example.data.remote.FirebaseAuthManager.currentUser.value != null && _currentScreen.value != AppScreen.SPLASH) AppScreen.PROFILE else screen
         if (_currentScreen.value != target) { _screenHistory.add(_currentScreen.value); _currentScreen.value = target }
