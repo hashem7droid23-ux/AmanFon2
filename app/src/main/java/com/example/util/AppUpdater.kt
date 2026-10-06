@@ -183,6 +183,31 @@ object AppUpdater {
             val dm = context.getSystemService(DownloadManager::class.java) ?: error("No DownloadManager")
             downloadId = dm.enqueue(request)
 
+            // Guard so completion is handled exactly once (broadcast + poll fallback).
+            val handled = java.util.concurrent.atomic.AtomicBoolean(false)
+            var receiverRef: BroadcastReceiver? = null
+            fun handleDownloadComplete() {
+                if (!handled.compareAndSet(false, true)) return
+                try { receiverRef?.let { context.unregisterReceiver(it) } } catch (_: Exception) {}
+                downloadReceiver = null
+                receiverRef = null
+                dismissProgress()
+                val query = DownloadManager.Query().setFilterById(downloadId)
+                dm.query(query).use { cursor ->
+                    if (!cursor.moveToFirst()) { downloadFailed(activity, update); return }
+                    val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                    if (status != DownloadManager.STATUS_SUCCESSFUL) { downloadFailed(activity, update); return }
+                }
+                // Verify integrity before installing
+                if (file.length() != update.bytes || !sha256Of(file).equals(update.sha256, true)) {
+                    file.delete()
+                    Toast.makeText(activity, "فشل التحقق من ملف التحديث، سيتم فتح التحميل في المتصفح", Toast.LENGTH_LONG).show()
+                    openInBrowser(activity, update.url)
+                    return
+                }
+                installApk(activity, file)
+            }
+
             // Progress dialog
             val bar = ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal).apply {
                 max = 100; isIndeterminate = false
@@ -209,6 +234,16 @@ object AppUpdater {
                     val query = DownloadManager.Query().setFilterById(downloadId)
                     dm.query(query).use { cursor ->
                         if (cursor.moveToFirst()) {
+                            // Fallback: broadcast can be lost on some devices — detect completion here too.
+                            val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                            if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                                handleDownloadComplete()
+                                return
+                            }
+                            if (status == DownloadManager.STATUS_FAILED) {
+                                handleDownloadComplete()
+                                return
+                            }
                             val total = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
                             val done = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
                             if (total > 0) {
@@ -226,23 +261,10 @@ object AppUpdater {
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(c: Context, intent: Intent) {
                     if (intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) != downloadId) return
-                    dismissProgress()
-                    val query = DownloadManager.Query().setFilterById(downloadId)
-                    dm.query(query).use { cursor ->
-                        if (!cursor.moveToFirst()) { downloadFailed(activity, update); return }
-                        val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                        if (status != DownloadManager.STATUS_SUCCESSFUL) { downloadFailed(activity, update); return }
-                    }
-                    // Verify integrity before installing
-                    if (file.length() != update.bytes || !sha256Of(file).equals(update.sha256, true)) {
-                        file.delete()
-                        Toast.makeText(activity, "فشل التحقق من ملف التحديث، سيتم فتح التحميل في المتصفح", Toast.LENGTH_LONG).show()
-                        openInBrowser(activity, update.url)
-                        return
-                    }
-                    installApk(activity, file)
+                    handleDownloadComplete()
                 }
             }
+            receiverRef = receiver
             downloadReceiver = receiver
             if (Build.VERSION.SDK_INT >= 33) {
                 context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED)
