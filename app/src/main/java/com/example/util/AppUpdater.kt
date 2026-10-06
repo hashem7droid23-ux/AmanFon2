@@ -1,1 +1,323 @@
-cGFja2FnZSBjb20uZXhhbXBsZS51dGlsCgppbXBvcnQgYW5kcm9pZC5hbm5vdGF0aW9uLlN1cHByZXNzTGludAppbXBvcnQgYW5kcm9pZC5hcHAuRG93bmxvYWRNYW5hZ2VyCmltcG9ydCBhbmRyb2lkLmNvbnRlbnQuQnJvYWRjYXN0UmVjZWl2ZXIKaW1wb3J0IGFuZHJvaWQuY29udGVudC5Db250ZXh0CmltcG9ydCBhbmRyb2lkLmNvbnRlbnQuSW50ZW50CmltcG9ydCBhbmRyb2lkLmNvbnRlbnQuSW50ZW50RmlsdGVyCmltcG9ydCBhbmRyb2lkLmNvbnRlbnQucG0uUGFja2FnZU1hbmFnZXIKaW1wb3J0IGFuZHJvaWQubmV0LlVyaQppbXBvcnQgYW5kcm9pZC5vcy5CdWlsZAppbXBvcnQgYW5kcm9pZC5vcy5FbnZpcm9ubWVudAppbXBvcnQgYW5kcm9pZC5vcy5IYW5kbGVyCmltcG9ydCBhbmRyb2lkLm9zLkxvb3BlcgppbXBvcnQgYW5kcm9pZC53aWRnZXQuTGluZWFyTGF5b3V0CmltcG9ydCBhbmRyb2lkLndpZGdldC5Qcm9ncmVzc0JhcgppbXBvcnQgYW5kcm9pZC53aWRnZXQuVGV4dFZpZXcKaW1wb3J0IGFuZHJvaWQud2lkZ2V0LlRvYXN0CmltcG9ydCBhbmRyb2lkeC5hY3Rpdml0eS5Db21wb25lbnRBY3Rpdml0eQppbXBvcnQgYW5kcm9pZC5hcHAuQWxlcnREaWFsb2cKaW1wb3J0IGFuZHJvaWR4LmNvcmUuY29udGVudC5GaWxlUHJvdmlkZXIKaW1wb3J0IGFuZHJvaWR4LmxpZmVjeWNsZS5MaWZlY3ljbGUKaW1wb3J0IGFuZHJvaWR4LmxpZmVjeWNsZS5saWZlY3ljbGVTY29wZQppbXBvcnQgY29tLmV4YW1wbGUuQnVpbGRDb25maWcKaW1wb3J0IGtvdGxpbnguY29yb3V0aW5lcy5DYW5jZWxsYXRpb25FeGNlcHRpb24KaW1wb3J0IGtvdGxpbnguY29yb3V0aW5lcy5EaXNwYXRjaGVycwppbXBvcnQga290bGlueC5jb3JvdXRpbmVzLmxhdW5jaAppbXBvcnQga290bGlueC5jb3JvdXRpbmVzLndpdGhDb250ZXh0CmltcG9ydCBva2h0dHAzLk9rSHR0cENsaWVudAppbXBvcnQgb2todHRwMy5SZXF1ZXN0CmltcG9ydCBvcmcuanNvbi5KU09OT2JqZWN0CmltcG9ydCBqYXZhLmlvLkJ5dGVBcnJheU91dHB1dFN0cmVhbQppbXBvcnQgamF2YS5pby5GaWxlCmltcG9ydCBqYXZhLmlvLkZpbGVJbnB1dFN0cmVhbQppbXBvcnQgamF2YS5sYW5nLnJlZi5XZWFrUmVmZXJlbmNlCmltcG9ydCBqYXZhLm5ldC5VUkkKaW1wb3J0IGphdmEuc2VjdXJpdHkuTWVzc2FnZURpZ2VzdAppbXBvcnQgamF2YS51dGlsLmNvbmN1cnJlbnQuVGltZVVuaXQKCm9iamVjdCBVcGRhdGVQb2xpY3kgewogICAgcHJpdmF0ZSBjb25zdCB2YWwgUk9PVCA9ICIvaGFzaGVtN2Ryb2lkMjMtdXgvQW1hbkZvbjIvcmVsZWFzZXMvZG93bmxvYWQvIgogICAgZnVuIHRydXN0ZWREb3dubG9hZCh1cmw6IFN0cmluZyk6IEJvb2xlYW4gPSB0cnkgewogICAgICAgIHZhbCB1cmkgPSBVUkkodXJsKQogICAgICAgIHVyaS5zY2hlbWUgPT0gImh0dHBzIiAmJiB1cmkuaG9zdCA9PSAiZ2l0aHViLmNvbSIgJiYgdXJpLnBvcnQgPT0gLTEgJiYKICAgICAgICAgICAgdXJpLnJhd1VzZXJJbmZvID09IG51bGwgJiYgdXJpLnJhd1F1ZXJ5ID09IG51bGwgJiYgdXJpLnJhd0ZyYWdtZW50ID09IG51bGwgJiYKICAgICAgICAgICAgdXJpLnJhd1BhdGggPT0gdXJpLnBhdGggJiYgdXJpLnBhdGguc3RhcnRzV2l0aChST09UKSAmJgogICAgICAgICAgICB1cmkucGF0aC5yZW1vdmVQcmVmaXgoUk9PVCkuc3BsaXQoJy8nKS5sZXQgeyBwYXJ0cyAtPgogICAgICAgICAgICAgICAgcGFydHMuc2l6ZSA9PSAyICYmIHBhcnRzLmFsbCB7IGl0LmlzTm90QmxhbmsoKSAmJiBpdCAhPSAiLiIgJiYgaXQgIT0gIi4uIiB9ICYmIHBhcnRzWzFdLmVuZHNXaXRoKCIuYXBrIikKICAgICAgICAgICAgfQogICAgfSBjYXRjaCAoXzogRXhjZXB0aW9uKSB7IGZhbHNlIH0KICAgIGZ1biBjb21wYXRpYmxlKGxvY2FsQ29kZTogSW50LCByZW1vdGVDb2RlOiBJbnQsIGxvY2FsQ2hhbm5lbDogU3RyaW5nLCByZW1vdGVDaGFubmVsOiBTdHJpbmcsCiAgICAgICAgbG9jYWxTaWduZXI6IFN0cmluZywgcmVtb3RlU2lnbmVyOiBTdHJpbmcsIHBhY2thZ2VOYW1lOiBTdHJpbmcpOiBCb29sZWFuID0KICAgICAgICByZW1vdGVDb2RlID4gbG9jYWxDb2RlICYmIGxvY2FsQ2hhbm5lbCA9PSByZW1vdGVDaGFubmVsICYmIHBhY2thZ2VOYW1lID09ICJjb20uYWlzdHVkaW8ubG9zdHBob25lLnltbmR4IiAmJgogICAgICAgIGxvY2FsU2lnbmVyLm1hdGNoZXMoUmVnZXgoIlthLWZBLUYwLTldezY0fSIpKSAmJiBsb2NhbFNpZ25lci5lcXVhbHMocmVtb3RlU2lnbmVyLCB0cnVlKQogICAgZnVuIHZlcmlmaWVkQXNzZXQodXJsOiBTdHJpbmcsIHNoYTI1NjogU3RyaW5nLCBieXRlczogTG9uZywgYXNzZXRVcmw6IFN0cmluZywgZGlnZXN0OiBTdHJpbmcsIGFzc2V0Qnl0ZXM6IExvbmcpOiBCb29sZWFuID0KICAgICAgICB0cnVzdGVkRG93bmxvYWQodXJsKSAmJiBzaGEyNTYubWF0Y2hlcyhSZWdleCgiW2EtZkEtRjAtOV17NjR9IikpICYmIGJ5dGVzID4gMCAmJgogICAgICAgICAgICBhc3NldFVybCA9PSB1cmwgJiYgYXNzZXRCeXRlcyA9PSBieXRlcyAmJiBkaWdlc3QuZXF1YWxzKCJzaGEyNTY6JHNoYTI1NiIsIHRydWUpCn0KCi8qKiBGb3JlZ3JvdW5kIGNoZWNrczsgR2l0SHViIHJlY2VpdmVzIG5vIGFjY291bnQgb3IgcmVwb3J0IGRhdGEuICovCm9iamVjdCBBcHBVcGRhdGVyIHsKICAgIHByaXZhdGUgdmFsIGNsaWVudCA9IE9rSHR0cENsaWVudC5CdWlsZGVyKCkuY29ubmVjdFRpbWVvdXQoMTAsIFRpbWVVbml0LlNFQ09ORFMpCiAgICAgICAgLnJlYWRUaW1lb3V0KDEwLCBUaW1lVW5pdC5TRUNPTkRTKS5jYWxsVGltZW91dCgyNSwgVGltZVVuaXQuU0VDT05EUykuYnVpbGQoKQogICAgcHJpdmF0ZSB2YXIgY2hlY2tpbmcgPSBmYWxzZQogICAgcHJpdmF0ZSB2YXIgZGlhbG9nOiBBbGVydERpYWxvZz8gPSBudWxsCiAgICBwcml2YXRlIHZhciBwcm9ncmVzc0RpYWxvZzogQWxlcnREaWFsb2c/ID0gbnVsbAogICAgcHJpdmF0ZSB2YXIgb3duZXI6IFdlYWtSZWZlcmVuY2U8Q29tcG9uZW50QWN0aXZpdHk+PyA9IG51bGwKICAgIHByaXZhdGUgdmFyIGxhc3RDaGVjayA9IDBMCiAgICBwcml2YXRlIHZhciBzaG93bkNvZGUgPSAwCiAgICBwcml2YXRlIHZhbCBhcGkgPSAiaHR0cHM6Ly9hcGkuZ2l0aHViLmNvbS9yZXBvcy9oYXNoZW03ZHJvaWQyMy11eC9BbWFuRm9uMi9yZWxlYXNlcy90YWdzL3YxLjAtYXBrIgogICAgcHJpdmF0ZSB2YWwgbWFuaWZlc3RVcmwgPSAiaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2hhc2hlbTdkcm9pZDIzLXV4L0FtYW5Gb24yL21haW4vdXBkYXRlLmpzb24iCiAgICBwcml2YXRlIGRhdGEgY2xhc3MgVXBkYXRlKHZhbCBjb2RlOiBJbnQsIHZhbCBuYW1lOiBTdHJpbmcsIHZhbCBub3RlczogU3RyaW5nLCB2YWwgdXJsOiBTdHJpbmcsCiAgICAgICAgdmFsIHNoYTI1NjogU3RyaW5nLCB2YWwgYnl0ZXM6IExvbmcpCiAgICBwcml2YXRlIHZhciBkb3dubG9hZElkOiBMb25nID0gLTFMCiAgICBwcml2YXRlIHZhciBkb3dubG9hZFJlY2VpdmVyOiBCcm9hZGNhc3RSZWNlaXZlcj8gPSBudWxsCiAgICBwcml2YXRlIHZhciBwcm9ncmVzc0hhbmRsZXI6IEhhbmRsZXI/ID0gbnVsbAoKICAgIHByaXZhdGUgZnVuIGpzb24odXJsOiBTdHJpbmcpOiBKU09OT2JqZWN0IHsKICAgICAgICB2YWwgcmVxdWVzdCA9IFJlcXVlc3QuQnVpbGRlcigpLnVybCh1cmwpLmhlYWRlcigiQWNjZXB0IiwgImFwcGxpY2F0aW9uL2pzb24iKQogICAgICAgICAgICAuaGVhZGVyKCJVc2VyLUFnZW50IiwgIkFtYW5QaG9uZS1VcGRhdGVDaGVjayIpLmhlYWRlcigiQ2FjaGUtQ29udHJvbCIsICJuby1jYWNoZSIpLmJ1aWxkKCkKICAgICAgICBjbGllbnQubmV3Q2FsbChyZXF1ZXN0KS5leGVjdXRlKCkudXNlIHsgcmVzcG9uc2UgLT4KICAgICAgICAgICAgY2hlY2socmVzcG9uc2UuaXNTdWNjZXNzZnVsKQogICAgICAgICAgICB2YWwgYm9keSA9IHJlc3BvbnNlLmJvZHkgPzogZXJyb3IoIk1pc3NpbmcgYm9keSIpCiAgICAgICAgICAgIGNoZWNrKGJvZHkuY29udGVudExlbmd0aCgpIDw9IDI2MjE0NCkKICAgICAgICAgICAgdmFsIG91dHB1dCA9IEJ5dGVBcnJheU91dHB1dFN0cmVhbSgpCiAgICAgICAgICAgIGJvZHkuYnl0ZVN0cmVhbSgpLnVzZSB7IGlucHV0IC0+CiAgICAgICAgICAgICAgICB2YWwgYnVmZmVyID0gQnl0ZUFycmF5KDgxOTIpCiAgICAgICAgICAgICAgICB3aGlsZSAodHJ1ZSkgewogICAgICAgICAgICAgICAgICAgIHZhbCBjb3VudCA9IGlucHV0LnJlYWQoYnVmZmVyKQogICAgICAgICAgICAgICAgICAgIGlmIChjb3VudCA8IDApIGJyZWFrCiAgICAgICAgICAgICAgICAgICAgY2hlY2sob3V0cHV0LnNpemUoKSArIGNvdW50IDw9IDI2MjE0NCkKICAgICAgICAgICAgICAgICAgICBvdXRwdXQud3JpdGUoYnVmZmVyLCAwLCBjb3VudCkKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfQogICAgICAgICAgICByZXR1cm4gSlNPTk9iamVjdChvdXRwdXQudG9TdHJpbmcoIlVURi04IikpCiAgICAgICAgfQogICAgfQogICAgQFN1cHByZXNzKCJERVBSRUNBVElPTiIpCiAgICBwcml2YXRlIGZ1biBzaWduZXIoYWN0aXZpdHk6IENvbXBvbmVudEFjdGl2aXR5KTogU3RyaW5nIHsKICAgICAgICB2YWwgY2VydGlmaWNhdGVzID0gaWYgKEJ1aWxkLlZFUlNJT04uU0RLX0lOVCA+PSAyOCkgewogICAgICAgICAgICBhY3Rpdml0eS5wYWNrYWdlTWFuYWdlci5nZXRQYWNrYWdlSW5mbyhhY3Rpdml0eS5wYWNrYWdlTmFtZSwgUGFja2FnZU1hbmFnZXIuR0VUX1NJR05JTkdfQ0VSVElGSUNBVEVTKQogICAgICAgICAgICAgICAgLnNpZ25pbmdJbmZvPy5hcGtDb250ZW50c1NpZ25lcnMKICAgICAgICB9IGVsc2UgYWN0aXZpdHkucGFja2FnZU1hbmFnZXIuZ2V0UGFja2FnZUluZm8oYWN0aXZpdHkucGFja2FnZU5hbWUsIFBhY2thZ2VNYW5hZ2VyLkdFVF9TSUdOQVRVUkVTKS5zaWduYXR1cmVzCiAgICAgICAgdmFsIGNlcnRpZmljYXRlID0gY2VydGlmaWNhdGVzPy5zaW5nbGVPck51bGwoKSA/OiByZXR1cm4gIiIKICAgICAgICByZXR1cm4gTWVzc2FnZURpZ2VzdC5nZXRJbnN0YW5jZSgiU0hBLTI1NiIpLmRpZ2VzdChjZXJ0aWZpY2F0ZS50b0J5dGVBcnJheSgpKS5qb2luVG9TdHJpbmcoIiIpIHsgIiUwMngiLmZvcm1hdChpdCkgfQogICAgfQogICAgcHJpdmF0ZSBmdW4gZmV0Y2goYWN0aXZpdHk6IENvbXBvbmVudEFjdGl2aXR5KTogVXBkYXRlPyB7CiAgICAgICAgdmFsIHJvb3QgPSBqc29uKG1hbmlmZXN0VXJsKQogICAgICAgIGlmIChyb290Lm9wdEludCgic2NoZW1hVmVyc2lvbiIpICE9IDEpIHJldHVybiBudWxsCiAgICAgICAgdmFsIGNoYW5uZWwgPSBpZiAoQnVpbGRDb25maWcuREVCVUcpICJkZWJ1ZyIgZWxzZSAicHJvZHVjdGlvbiIKICAgICAgICB2YWwgbWFuaWZlc3QgPSByb290Lm9wdEpTT05PYmplY3QoY2hhbm5lbCkgPzogcmV0dXJuIG51bGwKICAgICAgICBpZiAoIW1hbmlmZXN0Lm9wdEJvb2xlYW4oImVuYWJsZWQiLCBmYWxzZSkpIHJldHVybiBudWxsCiAgICAgICAgdmFsIGNvZGUgPSBtYW5pZmVzdC5nZXRJbnQoInZlcnNpb25Db2RlIikKICAgICAgICBpZiAoIVVwZGF0ZVBvbGljeS5jb21wYXRpYmxlKEJ1aWxkQ29uZmlnLlZFUlNJT05fQ09ERSwgY29kZSwgY2hhbm5lbCwgbWFuaWZlc3QuZ2V0U3RyaW5nKCJjaGFubmVsIiksCiAgICAgICAgICAgICAgICBzaWduZXIoYWN0aXZpdHkpLCBtYW5pZmVzdC5nZXRTdHJpbmcoInNpZ25lclNoYTI1NiIpLCBtYW5pZmVzdC5nZXRTdHJpbmcoInBhY2thZ2VOYW1lIikpKSByZXR1cm4gbnVsbAogICAgICAgIHZhbCB1cmwgPSBtYW5pZmVzdC5nZXRTdHJpbmcoImRvd25sb2FkVXJsIikKICAgICAgICBpZiAoIVVwZGF0ZVBvbGljeS50cnVzdGVkRG93bmxvYWQodXJsKSkgcmV0dXJuIG51bGwKICAgICAgICB2YWwgc2hhMjU2ID0gbWFuaWZlc3QuZ2V0U3RyaW5nKCJhcGtTaGEyNTYiKQogICAgICAgIHZhbCBieXRlcyA9IG1hbmlmZXN0LmdldExvbmcoImFwa0J5dGVzIikKICAgICAgICB2YWwgcmVsZWFzZSA9IGpzb24oYXBpKQogICAgICAgIGlmIChyZWxlYXNlLm9wdEJvb2xlYW4oImRyYWZ0IikgfHwgcmVsZWFzZS5vcHRCb29sZWFuKCJwcmVyZWxlYXNlIikpIHJldHVybiBudWxsCiAgICAgICAgdmFsIGFzc2V0cyA9IHJlbGVhc2UuZ2V0SlNPTkFycmF5KCJhc3NldHMiKQogICAgICAgIHZhbCBtYXRjaGluZyA9ICgwIHVudGlsIGFzc2V0cy5sZW5ndGgoKSkubWFwIHsgYXNzZXRzLmdldEpTT05PYmplY3QoaXQpIH0uYW55IHsgYXNzZXQgLT4KICAgICAgICAgICAgYXNzZXQub3B0U3RyaW5nKCJzdGF0ZSIpID09ICJ1cGxvYWRlZCIgJiYgVXBkYXRlUG9saWN5LnZlcmlmaWVkQXNzZXQodXJsLCBzaGEyNTYsCiAgICAgICAgICAgICAgICBieXRlcywgYXNzZXQub3B0U3RyaW5nKCJicm93c2VyX2Rvd25sb2FkX3VybCIpLCBhc3NldC5vcHRTdHJpbmcoImRpZ2VzdCIpLCBhc3NldC5vcHRMb25nKCJzaXplIikpCiAgICAgICAgfQogICAgICAgIGlmICghbWF0Y2hpbmcpIHJldHVybiBudWxsCiAgICAgICAgdmFsIG5hbWUgPSBtYW5pZmVzdC5nZXRTdHJpbmcoInZlcnNpb25OYW1lIikudGFrZSg0MCkKICAgICAgICB2YWwgbm90ZXMgPSBtYW5pZmVzdC5nZXRTdHJpbmcoInJlbGVhc2VOb3RlcyIpLnRha2UoNjAwMCkKICAgICAgICBpZiAobmFtZS5pc0JsYW5rKCkgfHwgbm90ZXMuaXNCbGFuaygpKSByZXR1cm4gbnVsbAogICAgICAgIHJldHVybiBVcGRhdGUoY29kZSwgbmFtZSwgbm90ZXMsIHVybCwgc2hhMjU2LCBieXRlcykKICAgIH0KCiAgICBmdW4gY2hlY2soYWN0aXZpdHk6IENvbXBvbmVudEFjdGl2aXR5KSB7CiAgICAgICAgdmFsIG5vdyA9IGFuZHJvaWQub3MuU3lzdGVtQ2xvY2suZWxhcHNlZFJlYWx0aW1lKCkKICAgICAgICBpZiAoY2hlY2tpbmcgfHwgZGlhbG9nPy5pc1Nob3dpbmcgPT0gdHJ1ZSB8fCBwcm9ncmVzc0RpYWxvZz8uaXNTaG93aW5nID09IHRydWUgfHwKICAgICAgICAgICAgKGxhc3RDaGVjayAhPSAwTCAmJiBub3cgLSBsYXN0Q2hlY2sgPCAxNSAqIDYwICogMTAwMEwpKSByZXR1cm4KICAgICAgICBjaGVja2luZyA9IHRydWUKICAgICAgICBhY3Rpdml0eS5saWZlY3ljbGVTY29wZS5sYXVuY2ggewogICAgICAgICAgICB0cnkgewogICAgICAgICAgICAgICAgdmFsIHVwZGF0ZSA9IHdpdGhDb250ZXh0KERpc3BhdGNoZXJzLklPKSB7IGZldGNoKGFjdGl2aXR5KSB9CiAgICAgICAgICAgICAgICBsYXN0Q2hlY2sgPSBhbmRyb2lkLm9zLlN5c3RlbUNsb2NrLmVsYXBzZWRSZWFsdGltZSgpCiAgICAgICAgICAgICAgICBpZiAodXBkYXRlID09IG51bGwgfHwgc2hvd25Db2RlID09IHVwZGF0ZS5jb2RlIHx8IGFjdGl2aXR5LmlzRmluaXNoaW5nIHx8IGFjdGl2aXR5LmlzRGVzdHJveWVkIHx8CiAgICAgICAgICAgICAgICAgICAgIWFjdGl2aXR5LmxpZmVjeWNsZS5jdXJyZW50U3RhdGUuaXNBdExlYXN0KExpZmVjeWNsZS5TdGF0ZS5SRVNVTUVEKSkgcmV0dXJuQGxhdW5jaAogICAgICAgICAgICAgICAgdmFsIHByZWZlcmVuY2VzID0gYWN0aXZpdHkuZ2V0U2hhcmVkUHJlZmVyZW5jZXMoImFwcF91cGRhdGUiLCAwKQogICAgICAgICAgICAgICAgaWYgKFN5c3RlbS5jdXJyZW50VGltZU1pbGxpcygpIDwgcHJlZmVyZW5jZXMuZ2V0TG9uZygibGF0ZXJfJHt1cGRhdGUuY29kZX0iLCAwKSkgcmV0dXJuQGxhdW5jaAogICAgICAgICAgICAgICAgc2hvd25Db2RlID0gdXBkYXRlLmNvZGUKICAgICAgICAgICAgICAgIGZ1biBsYXRlcigpIHsgcHJlZmVyZW5jZXMuZWRpdCgpLnB1dExvbmcoImxhdGVyXyR7dXBkYXRlLmNvZGV9IiwgU3lzdGVtLmN1cnJlbnRUaW1lTWlsbGlzKCkgKyAyNCAqIDYwICogNjAgKiAxMDAwTCkuYXBwbHkoKSB9CiAgICAgICAgICAgICAgICBvd25lciA9IFdlYWtSZWZlcmVuY2UoYWN0aXZpdHkpCiAgICAgICAgICAgICAgICB2YWwgY3JlYXRlZCA9IEFsZXJ0RGlhbG9nLkJ1aWxkZXIoYWN0aXZpdHkpLnNldFRpdGxlKCLYpdi12K/Yp9ixINis2K/ZitivINmF2YYg2KPZhdin2YYg2YHZiNmGOiAke3VwZGF0ZS5uYW1lfSIpCiAgICAgICAgICAgICAgICAgICAgLnNldE1lc3NhZ2UoItin2YTYrNiv2YrYryDZgdmKINmH2LDYpyDYp9mE2KXYtdiv2KfYsTpcblxuJHt1cGRhdGUubm90ZXN9XG5cbtiz2YrYqtmFINiq2K3ZhdmK2YQg2KfZhNiq2K3Yr9mK2Ksg2K/Yp9iu2YQg2KfZhNiq2LfYqNmK2YLYjCDYq9mFINmK2LfZhNioINmF2YbZgyDYp9mE2YXZiNin2YHZgtipINi52YTZiSDYp9mE2KrYq9io2YrYqi4g2YTYpyDYqtit2LDZgSDYp9mE2KrYt9io2YrZgiDYp9mE2K3Yp9mE2YouIikKICAgICAgICAgICAgICAgICAgICAuc2V0UG9zaXRpdmVCdXR0b24oItiq2K3ZhdmK2YQg2YjYqtir2KjZitiqIikgeyBfLCBfIC0+IHN0YXJ0SW5BcHBEb3dubG9hZChhY3Rpdml0eSwgdXBkYXRlKSB9CiAgICAgICAgICAgICAgICAgICAgLnNldE5lZ2F0aXZlQnV0dG9uKCLZhNin2K3ZgtmL2KciKSB7IF8sIF8gLT4gbGF0ZXIoKSB9CiAgICAgICAgICAgICAgICAgICAgLnNldE9uQ2FuY2VsTGlzdGVuZXIgeyBsYXRlcigpIH0uY3JlYXRlKCkKICAgICAgICAgICAgICAgIGRpYWxvZyA9IGNyZWF0ZWQKICAgICAgICAgICAgICAgIGNyZWF0ZWQuc2V0T25EaXNtaXNzTGlzdGVuZXIgeyBpZiAoZGlhbG9nID09PSBjcmVhdGVkKSB7IGRpYWxvZyA9IG51bGw7IG93bmVyID0gbnVsbCB9IH0KICAgICAgICAgICAgICAgIGNyZWF0ZWQuc2hvdygpCiAgICAgICAgICAgIH0gY2F0Y2ggKGU6IENhbmNlbGxhdGlvbkV4Y2VwdGlvbikgeyB0aHJvdyBlIH0KICAgICAgICAgICAgY2F0Y2ggKF86IEV4Y2VwdGlvbikgeyAvKiBGYWlsZWQgY2hlY2tzIG5ldmVyIGJsb2NrIHRoZSBhcHAuICovIH0KICAgICAgICAgICAgZmluYWxseSB7IGNoZWNraW5nID0gZmFsc2UgfQogICAgICAgIH0KICAgIH0KCiAgICAvKiogRG93bmxvYWRzIHRoZSBBUEsgaW5zaWRlIHRoZSBhcHAsIHZlcmlmaWVzIGl0LCB0aGVuIG9wZW5zIHRoZSBpbnN0YWxsZXIuICovCiAgICBAU3VwcHJlc3NMaW50KCJVbnNwZWNpZmllZFJlZ2lzdGVyUmVjZWl2ZXJGbGFnIikKICAgIHByaXZhdGUgZnVuIHN0YXJ0SW5BcHBEb3dubG9hZChhY3Rpdml0eTogQ29tcG9uZW50QWN0aXZpdHksIHVwZGF0ZTogVXBkYXRlKSB7CiAgICAgICAgdmFsIGNvbnRleHQgPSBhY3Rpdml0eS5hcHBsaWNhdGlvbkNvbnRleHQKICAgICAgICB0cnkgewogICAgICAgICAgICBjYW5jZWxEb3dubG9hZChjb250ZXh0KQogICAgICAgICAgICB2YWwgZGlyID0gRmlsZShjb250ZXh0LmdldEV4dGVybmFsRmlsZXNEaXIoRW52aXJvbm1lbnQuRElSRUNUT1JZX0RPV05MT0FEUyksICJ1cGRhdGVzIikKICAgICAgICAgICAgaWYgKCFkaXIuZXhpc3RzKCkpIGRpci5ta2RpcnMoKQogICAgICAgICAgICB2YWwgZmlsZSA9IEZpbGUoZGlyLCAiQW1hblBob25lLSR7dXBkYXRlLmNvZGV9LmFwayIpCiAgICAgICAgICAgIGlmIChmaWxlLmV4aXN0cygpKSBmaWxlLmRlbGV0ZSgpCgogICAgICAgICAgICB2YWwgcmVxdWVzdCA9IERvd25sb2FkTWFuYWdlci5SZXF1ZXN0KFVyaS5wYXJzZSh1cGRhdGUudXJsKSkuYXBwbHkgewogICAgICAgICAgICAgICAgc2V0VGl0bGUoItij2YXYp9mGINmB2YjZhiAke3VwZGF0ZS5uYW1lfSIpCiAgICAgICAgICAgICAgICBzZXREZXNjcmlwdGlvbigi2KzYp9ix2Yog2KrYrdmF2YrZhCDYp9mE2KrYrdiv2YrYqyDYr9in2K7ZhCDYp9mE2KrYt9io2YrZgi4uLiIpCiAgICAgICAgICAgICAgICBzZXROb3RpZmljYXRpb25WaXNpYmlsaXR5KERvd25sb2FkTWFuYWdlci5SZXF1ZXN0LlZJU0lCSUxJVFlfVklTSUJMRSkKICAgICAgICAgICAgICAgIHNldERlc3RpbmF0aW9uSW5FeHRlcm5hbEZpbGVzRGlyKGNvbnRleHQsIEVudmlyb25tZW50LkRJUkVDVE9SWV9ET1dOTE9BRFMsICJ1cGRhdGVzL0FtYW5QaG9uZS0ke3VwZGF0ZS5jb2RlfS5hcGsiKQogICAgICAgICAgICAgICAgc2V0QWxsb3dlZE92ZXJNZXRlcmVkKHRydWUpCiAgICAgICAgICAgICAgICBzZXRBbGxvd2VkT3ZlclJvYW1pbmcodHJ1ZSkKICAgICAgICAgICAgfQogICAgICAgICAgICB2YWwgZG0gPSBjb250ZXh0LmdldFN5c3RlbVNlcnZpY2UoRG93bmxvYWRNYW5hZ2VyOjpjbGFzcy5qYXZhKSA/OiBlcnJvcigiTm8gRG93bmxvYWRNYW5hZ2VyIikKICAgICAgICAgICAgZG93bmxvYWRJZCA9IGRtLmVucXVldWUocmVxdWVzdCkKCiAgICAgICAgICAgIC8vIFByb2dyZXNzIGRpYWxvZwogICAgICAgICAgICB2YWwgYmFyID0gUHJvZ3Jlc3NCYXIoYWN0aXZpdHksIG51bGwsIGFuZHJvaWQuUi5hdHRyLnByb2dyZXNzQmFyU3R5bGVIb3Jpem9udGFsKS5hcHBseSB7CiAgICAgICAgICAgICAgICBtYXggPSAxMDA7IGlzSW5kZXRlcm1pbmF0ZSA9IGZhbHNlCiAgICAgICAgICAgICAgICBsYXlvdXRQYXJhbXMgPSBMaW5lYXJMYXlvdXQuTGF5b3V0UGFyYW1zKExpbmVhckxheW91dC5MYXlvdXRQYXJhbXMuTUFUQ0hfUEFSRU5ULAogICAgICAgICAgICAgICAgICAgIExpbmVhckxheW91dC5MYXlvdXRQYXJhbXMuV1JBUF9DT05URU5UKQogICAgICAgICAgICB9CiAgICAgICAgICAgIHZhbCBsYWJlbCA9IFRleHRWaWV3KGFjdGl2aXR5KS5hcHBseSB7IHRleHQgPSAi2KzYp9ix2Yog2KrYrdmF2YrZhCDYp9mE2KrYrdiv2YrYqy4uLiAwJSIgfQogICAgICAgICAgICB2YWwgbGF5b3V0ID0gTGluZWFyTGF5b3V0KGFjdGl2aXR5KS5hcHBseSB7CiAgICAgICAgICAgICAgICBvcmllbnRhdGlvbiA9IExpbmVhckxheW91dC5WRVJUSUNBTAogICAgICAgICAgICAgICAgc2V0UGFkZGluZyg0OCwgMzIsIDQ4LCAxNikKICAgICAgICAgICAgICAgIGFkZFZpZXcobGFiZWwpOyBhZGRWaWV3KGJhcikKICAgICAgICAgICAgfQogICAgICAgICAgICB2YWwgcGQgPSBBbGVydERpYWxvZy5CdWlsZGVyKGFjdGl2aXR5KS5zZXRUaXRsZSgi2KrYrdmF2YrZhCDYp9mE2KrYrdiv2YrYqyAke3VwZGF0ZS5uYW1lfSIpCiAgICAgICAgICAgICAgICAuc2V0VmlldyhsYXlvdXQpLnNldENhbmNlbGFibGUoZmFsc2UpCiAgICAgICAgICAgICAgICAuc2V0TmVnYXRpdmVCdXR0b24oItil2YTYutin2KEiKSB7IF8sIF8gLT4gY2FuY2VsRG93bmxvYWQoY29udGV4dCk7IGRpc21pc3NQcm9ncmVzcygpIH0uY3JlYXRlKCkKICAgICAgICAgICAgcHJvZ3Jlc3NEaWFsb2cgPSBwZAogICAgICAgICAgICBwZC5zaG93KCkKCiAgICAgICAgICAgIHZhbCBoYW5kbGVyID0gSGFuZGxlcihMb29wZXIuZ2V0TWFpbkxvb3BlcigpKQogICAgICAgICAgICBwcm9ncmVzc0hhbmRsZXIgPSBoYW5kbGVyCiAgICAgICAgICAgIHZhbCBwb2xsID0gb2JqZWN0IDogUnVubmFibGUgewogICAgICAgICAgICAgICAgb3ZlcnJpZGUgZnVuIHJ1bigpIHsKICAgICAgICAgICAgICAgICAgICBpZiAocHJvZ3Jlc3NEaWFsb2cgPT0gbnVsbCkgcmV0dXJuCiAgICAgICAgICAgICAgICAgICAgdmFsIHF1ZXJ5ID0gRG93bmxvYWRNYW5hZ2VyLlF1ZXJ5KCkuc2V0RmlsdGVyQnlJZChkb3dubG9hZElkKQogICAgICAgICAgICAgICAgICAgIGRtLnF1ZXJ5KHF1ZXJ5KS51c2UgeyBjdXJzb3IgLT4KICAgICAgICAgICAgICAgICAgICAgICAgaWYgKGN1cnNvci5tb3ZlVG9GaXJzdCgpKSB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWwgdG90YWwgPSBjdXJzb3IuZ2V0TG9uZyhjdXJzb3IuZ2V0Q29sdW1uSW5kZXhPclRocm93KERvd25sb2FkTWFuYWdlci5DT0xVTU5fVE9UQUxfU0laRV9CWVRFUykpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWwgZG9uZSA9IGN1cnNvci5nZXRMb25nKGN1cnNvci5nZXRDb2x1bW5JbmRleE9yVGhyb3coRG93bmxvYWRNYW5hZ2VyLkNPTFVNTl9CWVRFU19ET1dOTE9BREVEX1NPX0ZBUikpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiAodG90YWwgPiAwKSB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgdmFsIHBjdCA9IChkb25lICogMTAwIC8gdG90YWwpLnRvSW50KCkKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBiYXIucHJvZ3Jlc3MgPSBwY3QKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbC50ZXh0ID0gItis2KfYsdmKINiq2K3ZhdmK2YQg2KfZhNiq2K3Yr9mK2KsuLi4gJHBjdCUiCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgaGFuZGxlci5wb3N0RGVsYXllZCh0aGlzLCA1MDApCiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0KICAgICAgICAgICAgaGFuZGxlci5wb3N0KHBvbGwpCgogICAgICAgICAgICB2YWwgcmVjZWl2ZXIgPSBvYmplY3QgOiBCcm9hZGNhc3RSZWNlaXZlcigpIHsKICAgICAgICAgICAgICAgIG92ZXJyaWRlIGZ1biBvblJlY2VpdmUoYzogQ29udGV4dCwgaW50ZW50OiBJbnRlbnQpIHsKICAgICAgICAgICAgICAgICAgICBpZiAoaW50ZW50LmdldExvbmdFeHRyYShEb3dubG9hZE1hbmFnZXIuRVhUUkFfRE9XTkxPQURfSUQsIC0xKSAhPSBkb3dubG9hZElkKSByZXR1cm4KICAgICAgICAgICAgICAgICAgICBkaXNtaXNzUHJvZ3Jlc3MoKQogICAgICAgICAgICAgICAgICAgIHZhbCBxdWVyeSA9IERvd25sb2FkTWFuYWdlci5RdWVyeSgpLnNldEZpbHRlckJ5SWQoZG93bmxvYWRJZCkKICAgICAgICAgICAgICAgICAgICBkbS5xdWVyeShxdWVyeSkudXNlIHsgY3Vyc29yIC0+CiAgICAgICAgICAgICAgICAgICAgICAgIGlmICghY3Vyc29yLm1vdmVUb0ZpcnN0KCkpIHsgZG93bmxvYWRGYWlsZWQoYWN0aXZpdHksIHVwZGF0ZSk7IHJldHVybiB9CiAgICAgICAgICAgICAgICAgICAgICAgIHZhbCBzdGF0dXMgPSBjdXJzb3IuZ2V0SW50KGN1cnNvci5nZXRDb2x1bW5JbmRleE9yVGhyb3coRG93bmxvYWRNYW5hZ2VyLkNPTFVNTl9TVEFUVVMpKQogICAgICAgICAgICAgICAgICAgICAgICBpZiAoc3RhdHVzICE9IERvd25sb2FkTWFuYWdlci5TVEFUVVNfU1VDQ0VTU0ZVTCkgeyBkb3dubG9hZEZhaWxlZChhY3Rpdml0eSwgdXBkYXRlKTsgcmV0dXJuIH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgLy8gVmVyaWZ5IGludGVncml0eSBiZWZvcmUgaW5zdGFsbGluZwogICAgICAgICAgICAgICAgICAgIGlmIChmaWxlLmxlbmd0aCgpICE9IHVwZGF0ZS5ieXRlcyB8fCAhc2hhMjU2T2YoZmlsZSkuZXF1YWxzKHVwZGF0ZS5zaGEyNTYsIHRydWUpKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIGZpbGUuZGVsZXRlKCkKICAgICAgICAgICAgICAgICAgICAgICAgVG9hc3QubWFrZVRleHQoYWN0aXZpdHksICLZgdi02YQg2KfZhNiq2K3ZgtmCINmF2YYg2YXZhNmBINin2YTYqtit2K/Zitir2Iwg2LPZitiq2YUg2YHYqtitINin2YTYqtit2YXZitmEINmB2Yog2KfZhNmF2KrYtdmB2K0iLCBUb2FzdC5MRU5HVEhfTE9ORykuc2hvdygpCiAgICAgICAgICAgICAgICAgICAgICAgIG9wZW5JbkJyb3dzZXIoYWN0aXZpdHksIHVwZGF0ZS51cmwpCiAgICAgICAgICAgICAgICAgICAgICAgIHJldHVybgogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICBpbnN0YWxsQXBrKGFjdGl2aXR5LCBmaWxlKQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9CiAgICAgICAgICAgIGRvd25sb2FkUmVjZWl2ZXIgPSByZWNlaXZlcgogICAgICAgICAgICBpZiAoQnVpbGQuVkVSU0lPTi5TREtfSU5UID49IDMzKSB7CiAgICAgICAgICAgICAgICBjb250ZXh0LnJlZ2lzdGVyUmVjZWl2ZXIocmVjZWl2ZXIsIEludGVudEZpbHRlcihEb3dubG9hZE1hbmFnZXIuQUNUSU9OX0RPV05MT0FEX0NPTVBMRVRFKSwgQ29udGV4dC5SRUNFSVZFUl9OT1RfRVhQT1JURUQpCiAgICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgICAgICBAU3VwcHJlc3MoIkRFUFJFQ0FUSU9OIikKICAgICAgICAgICAgICAgIGNvbnRleHQucmVnaXN0ZXJSZWNlaXZlcihyZWNlaXZlciwgSW50ZW50RmlsdGVyKERvd25sb2FkTWFuYWdlci5BQ1RJT05fRE9XTkxPQURfQ09NUExFVEUpKQogICAgICAgICAgICB9CiAgICAgICAgfSBjYXRjaCAoXzogRXhjZXB0aW9uKSB7CiAgICAgICAgICAgIG9wZW5JbkJyb3dzZXIoYWN0aXZpdHksIHVwZGF0ZS51cmwpCiAgICAgICAgfQogICAgfQoKICAgIHByaXZhdGUgZnVuIGRvd25sb2FkRmFpbGVkKGFjdGl2aXR5OiBDb21wb25lbnRBY3Rpdml0eSwgdXBkYXRlOiBVcGRhdGUpIHsKICAgICAgICBjYW5jZWxEb3dubG9hZChhY3Rpdml0eS5hcHBsaWNhdGlvbkNvbnRleHQpCiAgICAgICAgVG9hc3QubWFrZVRleHQoYWN0aXZpdHksICLYqti52LDYsSDYqtit2YXZitmEINin2YTYqtit2K/ZitirINiv2KfYrtmEINin2YTYqti32KjZitmC2Iwg2LPZitiq2YUg2YHYqtitINin2YTZhdiq2LXZgditIiwgVG9hc3QuTEVOR1RIX0xPTkcpLnNob3coKQogICAgICAgIG9wZW5JbkJyb3dzZXIoYWN0aXZpdHksIHVwZGF0ZS51cmwpCiAgICB9CgogICAgcHJpdmF0ZSBmdW4gb3BlbkluQnJvd3NlcihhY3Rpdml0eTogQ29tcG9uZW50QWN0aXZpdHksIHVybDogU3RyaW5nKSB7CiAgICAgICAgdHJ5IHsgYWN0aXZpdHkuc3RhcnRBY3Rpdml0eShJbnRlbnQoSW50ZW50LkFDVElPTl9WSUVXLCBVcmkucGFyc2UodXJsKSkpIH0KICAgICAgICBjYXRjaCAoXzogRXhjZXB0aW9uKSB7IFRvYXN0Lm1ha2VUZXh0KGFjdGl2aXR5LCAi2KrYudiw2LEg2YHYqtitINix2KfYqNi3INin2YTYqtit2YXZitmEIiwgVG9hc3QuTEVOR1RIX0xPTkcpLnNob3coKSB9CiAgICB9CgogICAgcHJpdmF0ZSBmdW4gaW5zdGFsbEFwayhhY3Rpdml0eTogQ29tcG9uZW50QWN0aXZpdHksIGZpbGU6IEZpbGUpIHsKICAgICAgICB0cnkgewogICAgICAgICAgICB2YWwgdXJpID0gRmlsZVByb3ZpZGVyLmdldFVyaUZvckZpbGUoYWN0aXZpdHksICIke2FjdGl2aXR5LnBhY2thZ2VOYW1lfS5hcGt1cGRhdGUiLCBmaWxlKQogICAgICAgICAgICB2YWwgaW5zdGFsbCA9IEludGVudChJbnRlbnQuQUNUSU9OX1ZJRVcpLmFwcGx5IHsKICAgICAgICAgICAgICAgIHNldERhdGFBbmRUeXBlKHVyaSwgImFwcGxpY2F0aW9uL3ZuZC5hbmRyb2lkLnBhY2thZ2UtYXJjaGl2ZSIpCiAgICAgICAgICAgICAgICBhZGRGbGFncyhJbnRlbnQuRkxBR19BQ1RJVklUWV9ORVdfVEFTSyBvciBJbnRlbnQuRkxBR19HUkFOVF9SRUFEX1VSSV9QRVJNSVNTSU9OKQogICAgICAgICAgICB9CiAgICAgICAgICAgIGFjdGl2aXR5LnN0YXJ0QWN0aXZpdHkoaW5zdGFsbCkKICAgICAgICB9IGNhdGNoIChfOiBFeGNlcHRpb24pIHsKICAgICAgICAgICAgVG9hc3QubWFrZVRleHQoYWN0aXZpdHksICLYqti52LDYsSDYqNiv2KEg2KfZhNiq2KvYqNmK2KrYjCDYp9mB2KrYrSDZhdmE2YEgQVBLINmF2YYg2YXYrNmE2K8g2KfZhNiq2K3ZhdmK2YQiLCBUb2FzdC5MRU5HVEhfTE9ORykuc2hvdygpCiAgICAgICAgfQogICAgfQoKICAgIHByaXZhdGUgZnVuIHNoYTI1Nk9mKGZpbGU6IEZpbGUpOiBTdHJpbmcgPSB0cnkgewogICAgICAgIHZhbCBkaWdlc3QgPSBNZXNzYWdlRGlnZXN0LmdldEluc3RhbmNlKCJTSEEtMjU2IikKICAgICAgICBGaWxlSW5wdXRTdHJlYW0oZmlsZSkudXNlIHsgaW5wdXQgLT4KICAgICAgICAgICAgdmFsIGJ1ZmZlciA9IEJ5dGVBcnJheSg4MTkyKQogICAgICAgICAgICB3aGlsZSAodHJ1ZSkgewogICAgICAgICAgICAgICAgdmFsIG4gPSBpbnB1dC5yZWFkKGJ1ZmZlcikKICAgICAgICAgICAgICAgIGlmIChuIDwgMCkgYnJlYWsKICAgICAgICAgICAgICAgIGRpZ2VzdC51cGRhdGUoYnVmZmVyLCAwLCBuKQogICAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIGRpZ2VzdC5kaWdlc3QoKS5qb2luVG9TdHJpbmcoIiIpIHsgIiUwMngiLmZvcm1hdChpdCkgfQogICAgfSBjYXRjaCAoXzogRXhjZXB0aW9uKSB7ICIiIH0KCiAgICBwcml2YXRlIGZ1biBkaXNtaXNzUHJvZ3Jlc3MoKSB7CiAgICAgICAgcHJvZ3Jlc3NIYW5kbGVyPy5yZW1vdmVDYWxsYmFja3NBbmRNZXNzYWdlcyhudWxsKQogICAgICAgIHByb2dyZXNzSGFuZGxlciA9IG51bGwKICAgICAgICBwcm9ncmVzc0RpYWxvZz8uZGlzbWlzcygpCiAgICAgICAgcHJvZ3Jlc3NEaWFsb2cgPSBudWxsCiAgICB9CgogICAgcHJpdmF0ZSBmdW4gY2FuY2VsRG93bmxvYWQoY29udGV4dDogQ29udGV4dCkgewogICAgICAgIHRyeSB7CiAgICAgICAgICAgIGlmIChkb3dubG9hZElkICE9IC0xTCkgewogICAgICAgICAgICAgICAgY29udGV4dC5nZXRTeXN0ZW1TZXJ2aWNlKERvd25sb2FkTWFuYWdlcjo6Y2xhc3MuamF2YSk/LnJlbW92ZShkb3dubG9hZElkKQogICAgICAgICAgICAgICAgZG93bmxvYWRJZCA9IC0xTAogICAgICAgICAgICB9CiAgICAgICAgfSBjYXRjaCAoXzogRXhjZXB0aW9uKSB7IH0KICAgICAgICB0cnkgewogICAgICAgICAgICBkb3dubG9hZFJlY2VpdmVyPy5sZXQgeyBjb250ZXh0LnVucmVnaXN0ZXJSZWNlaXZlcihpdCkgfQogICAgICAgIH0gY2F0Y2ggKF86IEV4Y2VwdGlvbikgeyB9CiAgICAgICAgZG93bmxvYWRSZWNlaXZlciA9IG51bGwKICAgIH0KCiAgICBmdW4gcmVsZWFzZShhY3Rpdml0eTogQ29tcG9uZW50QWN0aXZpdHkpIHsKICAgICAgICBpZiAob3duZXI/LmdldCgpID09PSBhY3Rpdml0eSkgewogICAgICAgICAgICBkaWFsb2c/LmRpc21pc3MoKTsgZGlhbG9nID0gbnVsbAogICAgICAgICAgICBkaXNtaXNzUHJvZ3Jlc3MoKQogICAgICAgICAgICBjYW5jZWxEb3dubG9hZChhY3Rpdml0eS5hcHBsaWNhdGlvbkNvbnRleHQpCiAgICAgICAgICAgIG93bmVyID0gbnVsbAogICAgICAgIH0KICAgIH0KfQo=
+package com.example.util
+
+import android.annotation.SuppressLint
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import android.app.AlertDialog
+import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import com.example.BuildConfig
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.lang.ref.WeakReference
+import java.net.URI
+import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
+
+object UpdatePolicy {
+    private const val ROOT = "/hashem7droid23-ux/AmanFon2/releases/download/"
+    fun trustedDownload(url: String): Boolean = try {
+        val uri = URI(url)
+        uri.scheme == "https" && uri.host == "github.com" && uri.port == -1 &&
+            uri.rawUserInfo == null && uri.rawQuery == null && uri.rawFragment == null &&
+            uri.rawPath == uri.path && uri.path.startsWith(ROOT) &&
+            uri.path.removePrefix(ROOT).split('/').let { parts ->
+                parts.size == 2 && parts.all { it.isNotBlank() && it != "." && it != ".." } && parts[1].endsWith(".apk")
+            }
+    } catch (_: Exception) { false }
+    fun compatible(localCode: Int, remoteCode: Int, localChannel: String, remoteChannel: String,
+        localSigner: String, remoteSigner: String, packageName: String): Boolean =
+        remoteCode > localCode && localChannel == remoteChannel && packageName == "com.aistudio.lostphone.ymndx" &&
+        localSigner.matches(Regex("[a-fA-F0-9]{64}")) && localSigner.equals(remoteSigner, true)
+    fun verifiedAsset(url: String, sha256: String, bytes: Long, assetUrl: String, digest: String, assetBytes: Long): Boolean =
+        trustedDownload(url) && sha256.matches(Regex("[a-fA-F0-9]{64}")) && bytes > 0 &&
+            assetUrl == url && assetBytes == bytes && digest.equals("sha256:$sha256", true)
+}
+
+/** Foreground checks; GitHub receives no account or report data. */
+object AppUpdater {
+    private val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS).callTimeout(25, TimeUnit.SECONDS).build()
+    private var checking = false
+    private var dialog: AlertDialog? = null
+    private var progressDialog: AlertDialog? = null
+    private var owner: WeakReference<ComponentActivity>? = null
+    private var lastCheck = 0L
+    private var shownCode = 0
+    private val api = "https://api.github.com/repos/hashem7droid23-ux/AmanFon2/releases/tags/v1.0-apk"
+    private val manifestUrl = "https://raw.githubusercontent.com/hashem7droid23-ux/AmanFon2/main/update.json"
+    private data class Update(val code: Int, val name: String, val notes: String, val url: String,
+        val sha256: String, val bytes: Long)
+    private var downloadId: Long = -1L
+    private var downloadReceiver: BroadcastReceiver? = null
+    private var progressHandler: Handler? = null
+
+    private fun json(url: String): JSONObject {
+        val request = Request.Builder().url(url).header("Accept", "application/json")
+            .header("User-Agent", "AmanPhone-UpdateCheck").header("Cache-Control", "no-cache").build()
+        client.newCall(request).execute().use { response ->
+            check(response.isSuccessful)
+            val body = response.body ?: error("Missing body")
+            check(body.contentLength() <= 262144)
+            val output = ByteArrayOutputStream()
+            body.byteStream().use { input ->
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    check(output.size() + count <= 262144)
+                    output.write(buffer, 0, count)
+                }
+            }
+            return JSONObject(output.toString("UTF-8"))
+        }
+    }
+    @Suppress("DEPRECATION")
+    private fun signer(activity: ComponentActivity): String {
+        val certificates = if (Build.VERSION.SDK_INT >= 28) {
+            activity.packageManager.getPackageInfo(activity.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+                .signingInfo?.apkContentsSigners
+        } else activity.packageManager.getPackageInfo(activity.packageName, PackageManager.GET_SIGNATURES).signatures
+        val certificate = certificates?.singleOrNull() ?: return ""
+        return MessageDigest.getInstance("SHA-256").digest(certificate.toByteArray()).joinToString("") { "%02x".format(it) }
+    }
+    private fun fetch(activity: ComponentActivity): Update? {
+        val root = json(manifestUrl)
+        if (root.optInt("schemaVersion") != 1) return null
+        val channel = if (BuildConfig.DEBUG) "debug" else "production"
+        val manifest = root.optJSONObject(channel) ?: return null
+        if (!manifest.optBoolean("enabled", false)) return null
+        val code = manifest.getInt("versionCode")
+        if (!UpdatePolicy.compatible(BuildConfig.VERSION_CODE, code, channel, manifest.getString("channel"),
+                signer(activity), manifest.getString("signerSha256"), manifest.getString("packageName"))) return null
+        val url = manifest.getString("downloadUrl")
+        if (!UpdatePolicy.trustedDownload(url)) return null
+        val sha256 = manifest.getString("apkSha256")
+        val bytes = manifest.getLong("apkBytes")
+        val release = json(api)
+        if (release.optBoolean("draft") || release.optBoolean("prerelease")) return null
+        val assets = release.getJSONArray("assets")
+        val matching = (0 until assets.length()).map { assets.getJSONObject(it) }.any { asset ->
+            asset.optString("state") == "uploaded" && UpdatePolicy.verifiedAsset(url, sha256,
+                bytes, asset.optString("browser_download_url"), asset.optString("digest"), asset.optLong("size"))
+        }
+        if (!matching) return null
+        val name = manifest.getString("versionName").take(40)
+        val notes = manifest.getString("releaseNotes").take(6000)
+        if (name.isBlank() || notes.isBlank()) return null
+        return Update(code, name, notes, url, sha256, bytes)
+    }
+
+    fun check(activity: ComponentActivity) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (checking || dialog?.isShowing == true || progressDialog?.isShowing == true ||
+            (lastCheck != 0L && now - lastCheck < 15 * 60 * 1000L)) return
+        checking = true
+        activity.lifecycleScope.launch {
+            try {
+                val update = withContext(Dispatchers.IO) { fetch(activity) }
+                lastCheck = android.os.SystemClock.elapsedRealtime()
+                if (update == null || shownCode == update.code || activity.isFinishing || activity.isDestroyed ||
+                    !activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
+                val preferences = activity.getSharedPreferences("app_update", 0)
+                if (System.currentTimeMillis() < preferences.getLong("later_${update.code}", 0)) return@launch
+                shownCode = update.code
+                fun later() { preferences.edit().putLong("later_${update.code}", System.currentTimeMillis() + 24 * 60 * 60 * 1000L).apply() }
+                owner = WeakReference(activity)
+                val created = AlertDialog.Builder(activity).setTitle("إصدار جديد من أمان فون: ${update.name}")
+                    .setMessage("الجديد في هذا الإصدار:\n\n${update.notes}\n\nسيتم تحميل التحديث داخل التطبيق، ثم يطلب منك الموافقة على التثبيت. لا تحذف التطبيق الحالي.")
+                    .setPositiveButton("تحميل وتثبيت") { _, _ -> startInAppDownload(activity, update) }
+                    .setNegativeButton("لاحقًا") { _, _ -> later() }
+                    .setOnCancelListener { later() }.create()
+                dialog = created
+                created.setOnDismissListener { if (dialog === created) { dialog = null; owner = null } }
+                created.show()
+            } catch (e: CancellationException) { throw e }
+            catch (_: Exception) { /* Failed checks never block the app. */ }
+            finally { checking = false }
+        }
+    }
+
+    /** Downloads the APK inside the app, verifies it, then opens the installer. */
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private fun startInAppDownload(activity: ComponentActivity, update: Update) {
+        val context = activity.applicationContext
+        try {
+            cancelDownload(context)
+            val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "updates")
+            if (!dir.exists()) dir.mkdirs()
+            val file = File(dir, "AmanPhone-${update.code}.apk")
+            if (file.exists()) file.delete()
+
+            val request = DownloadManager.Request(Uri.parse(update.url)).apply {
+                setTitle("أمان فون ${update.name}")
+                setDescription("جاري تحميل التحديث داخل التطبيق...")
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+                setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "updates/AmanPhone-${update.code}.apk")
+                setAllowedOverMetered(true)
+                setAllowedOverRoaming(true)
+            }
+            val dm = context.getSystemService(DownloadManager::class.java) ?: error("No DownloadManager")
+            downloadId = dm.enqueue(request)
+
+            // Progress dialog
+            val bar = ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 100; isIndeterminate = false
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT)
+            }
+            val label = TextView(activity).apply { text = "جاري تحميل التحديث... 0%" }
+            val layout = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(48, 32, 48, 16)
+                addView(label); addView(bar)
+            }
+            val pd = AlertDialog.Builder(activity).setTitle("تحميل التحديث ${update.name}")
+                .setView(layout).setCancelable(false)
+                .setNegativeButton("إلغاء") { _, _ -> cancelDownload(context); dismissProgress() }.create()
+            progressDialog = pd
+            pd.show()
+
+            val handler = Handler(Looper.getMainLooper())
+            progressHandler = handler
+            val poll = object : Runnable {
+                override fun run() {
+                    if (progressDialog == null) return
+                    val query = DownloadManager.Query().setFilterById(downloadId)
+                    dm.query(query).use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val total = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                            val done = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                            if (total > 0) {
+                                val pct = (done * 100 / total).toInt()
+                                bar.progress = pct
+                                label.text = "جاري تحميل التحديث... $pct%"
+                            }
+                        }
+                    }
+                    handler.postDelayed(this, 500)
+                }
+            }
+            handler.post(poll)
+
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(c: Context, intent: Intent) {
+                    if (intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) != downloadId) return
+                    dismissProgress()
+                    val query = DownloadManager.Query().setFilterById(downloadId)
+                    dm.query(query).use { cursor ->
+                        if (!cursor.moveToFirst()) { downloadFailed(activity, update); return }
+                        val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                        if (status != DownloadManager.STATUS_SUCCESSFUL) { downloadFailed(activity, update); return }
+                    }
+                    // Verify integrity before installing
+                    if (file.length() != update.bytes || !sha256Of(file).equals(update.sha256, true)) {
+                        file.delete()
+                        Toast.makeText(activity, "فشل التحقق من ملف التحديث، سيتم فتح التحميل في المتصفح", Toast.LENGTH_LONG).show()
+                        openInBrowser(activity, update.url)
+                        return
+                    }
+                    installApk(activity, file)
+                }
+            }
+            downloadReceiver = receiver
+            if (Build.VERSION.SDK_INT >= 33) {
+                context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("DEPRECATION")
+                context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+            }
+        } catch (_: Exception) {
+            openInBrowser(activity, update.url)
+        }
+    }
+
+    private fun downloadFailed(activity: ComponentActivity, update: Update) {
+        cancelDownload(activity.applicationContext)
+        Toast.makeText(activity, "تعذر تحميل التحديث داخل التطبيق، سيتم فتح المتصفح", Toast.LENGTH_LONG).show()
+        openInBrowser(activity, update.url)
+    }
+
+    private fun openInBrowser(activity: ComponentActivity, url: String) {
+        try { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+        catch (_: Exception) { Toast.makeText(activity, "تعذر فتح رابط التحميل", Toast.LENGTH_LONG).show() }
+    }
+
+    private fun installApk(activity: ComponentActivity, file: File) {
+        try {
+            val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.apkupdate", file)
+            val install = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            activity.startActivity(install)
+        } catch (_: Exception) {
+            Toast.makeText(activity, "تعذر بدء التثبيت، افتح ملف APK من مجلد التحميل", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun sha256Of(file: File): String = try {
+        val digest = MessageDigest.getInstance("SHA-256")
+        FileInputStream(file).use { input ->
+            val buffer = ByteArray(8192)
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                digest.update(buffer, 0, n)
+            }
+        }
+        digest.digest().joinToString("") { "%02x".format(it) }
+    } catch (_: Exception) { "" }
+
+    private fun dismissProgress() {
+        progressHandler?.removeCallbacksAndMessages(null)
+        progressHandler = null
+        progressDialog?.dismiss()
+        progressDialog = null
+    }
+
+    private fun cancelDownload(context: Context) {
+        try {
+            if (downloadId != -1L) {
+                context.getSystemService(DownloadManager::class.java)?.remove(downloadId)
+                downloadId = -1L
+            }
+        } catch (_: Exception) { }
+        try {
+            downloadReceiver?.let { context.unregisterReceiver(it) }
+        } catch (_: Exception) { }
+        downloadReceiver = null
+    }
+
+    fun release(activity: ComponentActivity) {
+        if (owner?.get() === activity) {
+            dialog?.dismiss(); dialog = null
+            dismissProgress()
+            cancelDownload(activity.applicationContext)
+            owner = null
+        }
+    }
+}
