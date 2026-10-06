@@ -1,1 +1,27 @@
-ewogICJzY2hlbWFWZXJzaW9uIjogMSwKICAiZGVidWciOiB7CiAgICAiZW5hYmxlZCI6IHRydWUsCiAgICAiY2hhbm5lbCI6ICJkZWJ1ZyIsCiAgICAicGFja2FnZU5hbWUiOiAiY29tLmFpc3R1ZGlvLmxvc3RwaG9uZS55bW5keCIsCiAgICAidmVyc2lvbkNvZGUiOiAxMSwKICAgICJ2ZXJzaW9uTmFtZSI6ICIyLjAtZGVidWctdGVzdCIsCiAgICAic2lnbmVyU2hhMjU2IjogImNmN2MxZTY4NjZjOTRlZjliZTQ1NzZmNDcwOTg1MWFlNzIzZWZhZWFjYzIzYWYxZjg1OWRjMzYyZDU1YTFlZDgiLAogICAgImFwa1NoYTI1NiI6ICI5MDM0ZDIxMzU3MGE2YzllOTcxOGIxZmU3MjEwZjYwNzIzNDQ5MGQ4MmYzMmVjZWIwYWJlYmNkOWU1NDI5N2ExIiwKICAgICJhcGtCeXRlcyI6IDI4OTA4NjM4LAogICAgImRvd25sb2FkVXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9oYXNoZW03ZHJvaWQyMy11eC9BbWFuRm9uMi9yZWxlYXNlcy9kb3dubG9hZC92MS4wLWFway9BbWFuUGhvbmUtZGVidWcuYXBrIiwKICAgICJyZWxlYXNlTm90ZXMiOiAi8J+nqiDYqtit2K/ZitirINiq2KzYsdmK2KjZiiDZhNin2K7Yqtio2KfYsSDZhti42KfZhSDYp9mE2KrYrdiv2YrYqyDYp9mE2KrZhNmC2KfYptmKINmB2YLYtyDigJQg2YTYpyDYqtmI2KzYryDZhdmF2YrYstin2Kog2KzYr9mK2K/YqSDYrdmC2YrZgtmK2KkuIgogIH0sCiAgInByb2R1Y3Rpb24iOiB7CiAgICAiZW5hYmxlZCI6IHRydWUsCiAgICAiY2hhbm5lbCI6ICJwcm9kdWN0aW9uIiwKICAgICJwYWNrYWdlTmFtZSI6ICJjb20uYWlzdHVkaW8ubG9zdHBob25lLnltbmR4IiwKICAgICJ2ZXJzaW9uQ29kZSI6IDEyLAogICAgInZlcnNpb25OYW1lIjogIjIuMS10ZXN0IiwKICAgICJzaWduZXJTaGEyNTYiOiAiOGZlM2IzZGQyNTI3MjgyOTM2Yjg1YzdhZTk3MDg0MWI4OWQ1YzhiMmQ5MmVhNGM0ZGE0Y2Y3N2NkMjBjZTExMCIsCiAgICAiYXBrU2hhMjU2IjogIjZhNWNmMzc4YTFiZGQyYThmMDVhN2JkNGE3NDI1MjM3N2E1YWE2N2FmNzBkOTNmZTUzZGI3ZTNmODM5MWQ4Y2IiLAogICAgImFwa0J5dGVzIjogMTIzNzE4NjcsCiAgICAiZG93bmxvYWRVcmwiOiAiaHR0cHM6Ly9naXRodWIuY29tL2hhc2hlbTdkcm9pZDIzLXV4L0FtYW5Gb24yL3JlbGVhc2VzL2Rvd25sb2FkL3YxLjAtYXBrL0FtYW5QaG9uZS5hcGsiLAogICAgInJlbGVhc2VOb3RlcyI6ICLwn6eqINiq2K3Yr9mK2Ksg2KrYrNix2YrYqNmKINmE2KfYrtiq2KjYp9ixINmG2LjYp9mFINin2YTYqtit2K/ZitirINin2YTYqtmE2YLYp9im2Yog2YHZgti3IOKAlCDZhNinINiq2YjYrNivINmF2YXZitiy2KfYqiDYrNiv2YrYr9ipINit2YLZitmC2YrYqS4iCiAgfQp9
+{
+  "schemaVersion": 1,
+  "debug": {
+    "enabled": true,
+    "channel": "debug",
+    "packageName": "com.aistudio.lostphone.ymndx",
+    "versionCode": 11,
+    "versionName": "2.0-debug-test",
+    "signerSha256": "cf7c1e6866c94ef9be4576f4709851ae723efaeacc23af1f859dc362d55a1ed8",
+    "apkSha256": "9034d213570a6c9e9718b1fe7210f607234490d82f32eceb0abebcd9e54297a1",
+    "apkBytes": 28908638,
+    "downloadUrl": "https://github.com/hashem7droid23-ux/AmanFon2/releases/download/v1.0-apk/AmanPhone-debug.apk",
+    "releaseNotes": "🧪 تحديث تجريبي لاختبار نظام التحديث التلقائي فقط — لا توجد مميزات جديدة حقيقية."
+  },
+  "production": {
+    "enabled": true,
+    "channel": "production",
+    "packageName": "com.aistudio.lostphone.ymndx",
+    "versionCode": 12,
+    "versionName": "2.1-test",
+    "signerSha256": "8fe3b3dd2527282936b85c7ae970841b89d5c8b2d92ea4c4da4cf77cd20ce110",
+    "apkSha256": "6a5cf378a1bdd2a8f05a7bd4a74252377a5aa67af70d93fe53db7e3f8391d8cb",
+    "apkBytes": 12371867,
+    "downloadUrl": "https://github.com/hashem7droid23-ux/AmanFon2/releases/download/v1.0-apk/AmanPhone.apk",
+    "releaseNotes": "🧪 تحديث تجريبي لاختبار نظام التحديث التلقائي فقط — لا توجد مميزات جديدة حقيقية."
+  }
+}
