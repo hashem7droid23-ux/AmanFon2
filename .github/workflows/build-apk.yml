@@ -101,6 +101,14 @@ jobs:
                     }
                   },
                   {
+                    "client_id": "550389528405-m2alt47bo927i77k3euilm04n96kem1q.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                      "package_name": "com.aistudio.lostphone.ymndx",
+                      "certificate_hash": "06b7b47fd3ce2b3296e47994f30e2e2d0bd70008"
+                    }
+                  },
+                  {
                     "client_id": "550389528405-oala1t19e633nujkda31nrtufna5hn0d.apps.googleusercontent.com",
                     "client_type": 1,
                     "android_info": {

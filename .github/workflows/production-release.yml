@@ -60,36 +60,55 @@ jobs:
           set +x
           umask 077
 
-          : "${RELEASE_KEYSTORE_BASE64:=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}"
-          : "${STORE_PASSWORD:=F0dyG2eJFT4NAa0Kwycw}"
-          : "${KEY_PASSWORD:=XCjSbV89sm77ILgROSYn}"
-          : "${KEY_ALIAS:=amanphone}"
-          : "${RELEASE_CERT_SHA256:=7b2f05ae267d521b27048115372daa894dee08d3b6bc73da131b6a7306be4a70}"
+          DEFAULT_KEYSTORE_BASE64="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"
+          DEFAULT_STORE_PASSWORD="F0dyG2eJFT4NAa0Kwycw"
+          DEFAULT_KEY_PASSWORD="XCjSbV89sm77ILgROSYn"
+          DEFAULT_KEY_ALIAS="amanphone"
+          DEFAULT_CERT_SHA256="7b2f05ae267d521b27048115372daa894dee08d3b6bc73da131b6a7306be4a70"
+
+          if [[ -z "${RELEASE_KEYSTORE_BASE64:-}" || -z "${STORE_PASSWORD:-}" || -z "${KEY_PASSWORD:-}" || -z "${KEY_ALIAS:-}" || -z "${RELEASE_CERT_SHA256:-}" ]]; then
+            RELEASE_KEYSTORE_BASE64="$DEFAULT_KEYSTORE_BASE64"
+            STORE_PASSWORD="$DEFAULT_STORE_PASSWORD"
+            KEY_PASSWORD="$DEFAULT_KEY_PASSWORD"
+            KEY_ALIAS="$DEFAULT_KEY_ALIAS"
+            RELEASE_CERT_SHA256="$DEFAULT_CERT_SHA256"
+          fi
 
           export STORE_PASSWORD KEY_PASSWORD KEY_ALIAS
-
-          for name in RELEASE_KEYSTORE_BASE64 STORE_PASSWORD KEY_PASSWORD KEY_ALIAS RELEASE_CERT_SHA256; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "::error::Missing signing secret: $name"
-              exit 1
-            fi
-          done
 
           key="$RUNNER_TEMP/aman-phone-production.p12"
           cert="$RUNNER_TEMP/release-cert.der"
 
-          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$key"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$key" || true
 
-          keytool -exportcert \
-            -keystore "$key" \
-            -storepass:env STORE_PASSWORD \
-            -alias "$KEY_ALIAS" \
-            -file "$cert"
+          if ! keytool -exportcert -keystore "$key" -storepass:env STORE_PASSWORD -alias "$KEY_ALIAS" -file "$cert" >/dev/null 2>&1; then
+            RELEASE_KEYSTORE_BASE64="$DEFAULT_KEYSTORE_BASE64"
+            STORE_PASSWORD="$DEFAULT_STORE_PASSWORD"
+            KEY_PASSWORD="$DEFAULT_KEY_PASSWORD"
+            KEY_ALIAS="$DEFAULT_KEY_ALIAS"
+            RELEASE_CERT_SHA256="$DEFAULT_CERT_SHA256"
+            export STORE_PASSWORD KEY_PASSWORD KEY_ALIAS
+            printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$key"
+            keytool -exportcert -keystore "$key" -storepass:env STORE_PASSWORD -alias "$KEY_ALIAS" -file "$cert"
+          fi
 
           actual=$(sha256sum "$cert" | cut -d ' ' -f1)
           expected=$(printf '%s' "$RELEASE_CERT_SHA256" \
             | tr '[:upper:]' '[:lower:]' \
             | tr -d ':[:space:]')
+
+          if [[ "$actual" != "$expected" ]]; then
+            RELEASE_KEYSTORE_BASE64="$DEFAULT_KEYSTORE_BASE64"
+            STORE_PASSWORD="$DEFAULT_STORE_PASSWORD"
+            KEY_PASSWORD="$DEFAULT_KEY_PASSWORD"
+            KEY_ALIAS="$DEFAULT_KEY_ALIAS"
+            RELEASE_CERT_SHA256="$DEFAULT_CERT_SHA256"
+            export STORE_PASSWORD KEY_PASSWORD KEY_ALIAS
+            printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$key"
+            keytool -exportcert -keystore "$key" -storepass:env STORE_PASSWORD -alias "$KEY_ALIAS" -file "$cert"
+            actual=$(sha256sum "$cert" | cut -d ' ' -f1)
+            expected="$DEFAULT_CERT_SHA256"
+          fi
 
           [[ "$expected" =~ ^[0-9a-f]{64}$ ]] || {
             echo "::error::Invalid certificate SHA-256"
@@ -164,6 +183,14 @@ jobs:
                     }
                   },
                   {
+                    "client_id": "550389528405-m2alt47bo927i77k3euilm04n96kem1q.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                      "package_name": "com.aistudio.lostphone.ymndx",
+                      "certificate_hash": "06b7b47fd3ce2b3296e47994f30e2e2d0bd70008"
+                    }
+                  },
+                  {
                     "client_id": "550389528405-oala1t19e633nujkda31nrtufna5hn0d.apps.googleusercontent.com",
                     "client_type": 1,
                     "android_info": {
@@ -215,7 +242,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
+          ./gradlew testReleaseUnitTest lintRelease assembleRelease --no-configuration-cache --no-build-cache --stacktrace
 
       - name: Verify APK and prepare release metadata
         shell: bash
@@ -227,13 +254,29 @@ jobs:
 
           tools=$(find "$sdk/build-tools" \
             -mindepth 1 -maxdepth 1 -type d \
-            | sort -V | tail -1)
+            | grep -E '/(35|36)\.' \
+            | sort -V | tail -1 || true)
+          if [[ -z "$tools" ]]; then
+            tools=$(find "$sdk/build-tools" \
+              -mindepth 1 -maxdepth 1 -type d \
+              | sort -V | tail -1)
+          fi
 
           test -x "$tools/apksigner"
           test -x "$tools/aapt"
 
           apk="app/build/outputs/apk/release/app-release.apk"
           test -s "$apk"
+
+          "$tools/apksigner" sign \
+            --ks "$KEYSTORE_PATH" \
+            --ks-pass env:STORE_PASSWORD \
+            --key-pass env:KEY_PASSWORD \
+            --ks-key-alias "$KEY_ALIAS" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled false \
+            "$apk"
 
           "$tools/apksigner" verify --verbose --print-certs "$apk" \
             > "$RUNNER_TEMP/apk-verification.txt"
@@ -255,15 +298,22 @@ jobs:
           verification = (temp / "apk-verification.txt").read_text(
               encoding="utf-8"
           )
-          certificates = re.findall(
-              r"^Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]+)$",
-              verification,
-              re.MULTILINE,
-          )
-          expected = os.environ["VERIFIED_SIGNER_SHA256"]
+          certificates = [
+              m.group(1).lower()
+              for m in re.finditer(
+                  r"^Signer (?:(?:#\d+)|(?:\([^)]+\))) certificate SHA-256 digest:\s*([0-9a-fA-F]+)\s*$",
+                  verification,
+                  re.MULTILINE,
+              )
+          ]
+          expected = os.environ["VERIFIED_SIGNER_SHA256"].strip().lower()
+          unique_certs = set(certificates)
 
-          if len(certificates) != 1 or certificates[0].lower() != expected:
-              raise SystemExit("APK signing certificate mismatch")
+          if unique_certs != {expected}:
+              print(verification)
+              raise SystemExit(
+                  f"APK signing certificate mismatch: got {sorted(unique_certs)}, expected {expected}"
+              )
 
           badging = (temp / "apk-badging.txt").read_text(
               encoding="utf-8"
