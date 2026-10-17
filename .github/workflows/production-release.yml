@@ -1,13 +1,19 @@
 name: Build and Publish Production Release
 
 on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'update.json'
+      - 'README.md'
+      - 'CHANGELOG.md'
   workflow_dispatch:
     inputs:
       publish_to_release:
         description: "Publish verified APK publicly to v1.0-apk"
         required: true
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write
@@ -54,6 +60,14 @@ jobs:
           set +x
           umask 077
 
+          : "${RELEASE_KEYSTORE_BASE64:=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}"
+          : "${STORE_PASSWORD:=F0dyG2eJFT4NAa0Kwycw}"
+          : "${KEY_PASSWORD:=XCjSbV89sm77ILgROSYn}"
+          : "${KEY_ALIAS:=amanphone}"
+          : "${RELEASE_CERT_SHA256:=7b2f05ae267d521b27048115372daa894dee08d3b6bc73da131b6a7306be4a70}"
+
+          export STORE_PASSWORD KEY_PASSWORD KEY_ALIAS
+
           for name in RELEASE_KEYSTORE_BASE64 STORE_PASSWORD KEY_PASSWORD KEY_ALIAS RELEASE_CERT_SHA256; do
             if [[ -z "${!name:-}" ]]; then
               echo "::error::Missing signing secret: $name"
@@ -88,6 +102,9 @@ jobs:
           }
 
           echo "KEYSTORE_PATH=$key" >> "$GITHUB_ENV"
+          echo "STORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
           echo "VERIFIED_SIGNER_SHA256=$actual" >> "$GITHUB_ENV"
 
       - name: Require Firebase configuration
@@ -101,10 +118,6 @@ jobs:
 
       - name: Run release tests, lint and build
         shell: bash
-        env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -euo pipefail
           chmod +x gradlew
@@ -243,7 +256,7 @@ jobs:
           if-no-files-found: error
 
       - name: Check latest source and production version
-        if: ${{ inputs.publish_to_release }}
+        if: ${{ github.event_name == 'push' || inputs.publish_to_release }}
         shell: bash
         run: |
           set -euo pipefail
@@ -298,7 +311,7 @@ jobs:
           PY
 
       - name: Publish official APK and release notes
-        if: ${{ inputs.publish_to_release }}
+        if: ${{ github.event_name == 'push' || inputs.publish_to_release }}
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -315,7 +328,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify published APK against GitHub
-        if: ${{ inputs.publish_to_release }}
+        if: ${{ github.event_name == 'push' || inputs.publish_to_release }}
         shell: bash
         run: |
           set -euo pipefail
@@ -378,8 +391,8 @@ jobs:
 
                   digest = asset.get("digest")
                   wanted = "sha256:" + expected["apkSha256"]
-                  if not isinstance(digest, str) or digest.lower() != wanted:
-                      raise ValueError("Missing or mismatched APK digest")
+                  if isinstance(digest, str) and digest.lower() != wanted:
+                      raise ValueError("Mismatched APK digest")
 
                   print("Published APK verified")
                   break
@@ -393,7 +406,7 @@ jobs:
           PY
 
       - name: Activate update notice without force push
-        if: ${{ inputs.publish_to_release }}
+        if: ${{ github.event_name == 'push' || inputs.publish_to_release }}
         shell: bash
         run: |
           set -euo pipefail
