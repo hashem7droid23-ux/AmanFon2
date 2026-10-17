@@ -57,6 +57,15 @@ jobs:
 
       - name: Ensure google-services.json exists
         run: |
+          if [ ! -s app/src/main/res/values/firebase_applet_config.xml ]; then
+            mkdir -p app/src/main/res/values
+            cat << 'EOF' > app/src/main/res/values/firebase_applet_config.xml
+          <?xml version="1.0" encoding="utf-8" standalone="no"?>
+          <resources>
+              <string name="firestore_database_id" translatable="false">ai-studio-android-bbdab0c6-e15e-48f0-8ca7-0910319d9bda</string>
+          </resources>
+          EOF
+          fi
           if [ ! -f app/google-services.json ]; then
             echo "Restoring google-services.json..."
             cat << 'EOF' > app/google-services.json
@@ -76,6 +85,38 @@ jobs:
                 },
                 "oauth_client": [
                   {
+                    "client_id": "550389528405-jni48h7suco2an6bi2tum12ai4nbu1gr.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                      "package_name": "com.aistudio.lostphone.ymndx",
+                      "certificate_hash": "ffd51681acb73684a564303a9538969254532704"
+                    }
+                  },
+                  {
+                    "client_id": "550389528405-la3hq7qjottukp70ef95lgan75dvsack.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                      "package_name": "com.aistudio.lostphone.ymndx",
+                      "certificate_hash": "35815e7be301e2b23128f6643be304e17e2e55ab"
+                    }
+                  },
+                  {
+                    "client_id": "550389528405-oala1t19e633nujkda31nrtufna5hn0d.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                      "package_name": "com.aistudio.lostphone.ymndx",
+                      "certificate_hash": "3b046ba1bc524df12b51343a40182b6f38a3dc1e"
+                    }
+                  },
+                  {
+                    "client_id": "550389528405-oq0e2uertlvodeqa1hcr9to8l0fd6rcb.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                      "package_name": "com.aistudio.lostphone.ymndx",
+                      "certificate_hash": "a5ee2fba934872a3e5589bba0092ca156fdb8ed8"
+                    }
+                  },
+                  {
                     "client_id": "550389528405-cap0jq2qp73mi3u8a95h37r206o7ubtd.apps.googleusercontent.com",
                     "client_type": 3
                   }
@@ -85,7 +126,16 @@ jobs:
                     "current_key": "AIzaSyC_lRrLC4BobUJLMNsOyGGXGafiipWiNJI"
                   }
                 ],
-                "services": {}
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": [
+                      {
+                        "client_id": "550389528405-cap0jq2qp73mi3u8a95h37r206o7ubtd.apps.googleusercontent.com",
+                        "client_type": 3
+                      }
+                    ]
+                  }
+                }
               }
             ],
             "configuration_version": "1"
