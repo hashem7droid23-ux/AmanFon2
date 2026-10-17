@@ -74,6 +74,10 @@ object AppUpdater {
     private var downloadId: Long = -1L
     private var downloadReceiver: BroadcastReceiver? = null
     private var progressHandler: Handler? = null
+    private var pendingInstallFile: File? = null
+
+    private fun isActivityAlive(activity: ComponentActivity): Boolean =
+        !activity.isFinishing && !activity.isDestroyed
 
     private fun json(url: String): JSONObject {
         val request = Request.Builder().url(url).header("Accept", "application/json")
@@ -132,6 +136,15 @@ object AppUpdater {
     }
 
     fun check(activity: ComponentActivity) {
+        if (!isActivityAlive(activity)) return
+        // Resume pending APK installation if user just granted unknown sources permission
+        pendingInstallFile?.let { file ->
+            if (file.exists() && (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity.packageManager.canRequestPackageInstalls())) {
+                pendingInstallFile = null
+                installApk(activity, file)
+                return
+            }
+        }
         val now = android.os.SystemClock.elapsedRealtime()
         if (checking || dialog?.isShowing == true || progressDialog?.isShowing == true ||
             (lastCheck != 0L && now - lastCheck < 15 * 60 * 1000L)) return
@@ -140,7 +153,7 @@ object AppUpdater {
             try {
                 val update = withContext(Dispatchers.IO) { fetch(activity) }
                 lastCheck = android.os.SystemClock.elapsedRealtime()
-                if (update == null || shownCode == update.code || activity.isFinishing || activity.isDestroyed ||
+                if (update == null || shownCode == update.code || !isActivityAlive(activity) ||
                     !activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
                 val preferences = activity.getSharedPreferences("app_update", 0)
                 if (System.currentTimeMillis() < preferences.getLong("later_${update.code}", 0)) return@launch
@@ -164,7 +177,9 @@ object AppUpdater {
     /** Downloads the APK inside the app, verifies it, then opens the installer. */
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun startInAppDownload(activity: ComponentActivity, update: Update) {
+        if (!isActivityAlive(activity)) return
         val context = activity.applicationContext
+        val activityRef = WeakReference(activity)
         try {
             cancelDownload(context)
             val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "updates")
@@ -192,20 +207,21 @@ object AppUpdater {
                 downloadReceiver = null
                 receiverRef = null
                 dismissProgress()
+                val currentAct = activityRef.get()?.takeIf { isActivityAlive(it) } ?: return
                 val query = DownloadManager.Query().setFilterById(downloadId)
                 dm.query(query).use { cursor ->
-                    if (!cursor.moveToFirst()) { downloadFailed(activity, update); return }
+                    if (!cursor.moveToFirst()) { downloadFailed(currentAct, update); return }
                     val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                    if (status != DownloadManager.STATUS_SUCCESSFUL) { downloadFailed(activity, update); return }
+                    if (status != DownloadManager.STATUS_SUCCESSFUL) { downloadFailed(currentAct, update); return }
                 }
                 // Verify integrity before installing
                 if (file.length() != update.bytes || !sha256Of(file).equals(update.sha256, true)) {
                     file.delete()
-                    Toast.makeText(activity, "فشل التحقق من ملف التحديث، سيتم فتح التحميل في المتصفح", Toast.LENGTH_LONG).show()
-                    openInBrowser(activity, update.url)
+                    Toast.makeText(currentAct, "فشل التحقق من ملف التحديث، سيتم فتح التحميل في المتصفح", Toast.LENGTH_LONG).show()
+                    openInBrowser(currentAct, update.url)
                     return
                 }
-                installApk(activity, file)
+                installApk(currentAct, file)
             }
 
             // Progress dialog
@@ -230,7 +246,11 @@ object AppUpdater {
             progressHandler = handler
             val poll = object : Runnable {
                 override fun run() {
-                    if (progressDialog == null) return
+                    val currentAct = activityRef.get()
+                    if (progressDialog == null || currentAct == null || !isActivityAlive(currentAct)) {
+                        dismissProgress()
+                        return
+                    }
                     val query = DownloadManager.Query().setFilterById(downloadId)
                     dm.query(query).use { cursor ->
                         if (cursor.moveToFirst()) {
@@ -279,17 +299,31 @@ object AppUpdater {
 
     private fun downloadFailed(activity: ComponentActivity, update: Update) {
         cancelDownload(activity.applicationContext)
+        if (!isActivityAlive(activity)) return
         Toast.makeText(activity, "تعذر تحميل التحديث داخل التطبيق، سيتم فتح المتصفح", Toast.LENGTH_LONG).show()
         openInBrowser(activity, update.url)
     }
 
     private fun openInBrowser(activity: ComponentActivity, url: String) {
+        if (!isActivityAlive(activity)) return
         try { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
         catch (_: Exception) { Toast.makeText(activity, "تعذر فتح رابط التحميل", Toast.LENGTH_LONG).show() }
     }
 
     private fun installApk(activity: ComponentActivity, file: File) {
+        if (!isActivityAlive(activity)) return
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !activity.packageManager.canRequestPackageInstalls()) {
+                pendingInstallFile = file
+                Toast.makeText(activity, "يرجى السماح بتثبيت التحديث من هذا المصدر ثم العودة للتطبيق", Toast.LENGTH_LONG).show()
+                val permIntent = Intent(
+                    android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:${activity.packageName}")
+                )
+                activity.startActivity(permIntent)
+                return
+            }
+            pendingInstallFile = null
             val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.apkupdate", file)
             val install = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
@@ -317,7 +351,7 @@ object AppUpdater {
     private fun dismissProgress() {
         progressHandler?.removeCallbacksAndMessages(null)
         progressHandler = null
-        progressDialog?.dismiss()
+        try { progressDialog?.dismiss() } catch (_: Exception) {}
         progressDialog = null
     }
 
@@ -336,7 +370,8 @@ object AppUpdater {
 
     fun release(activity: ComponentActivity) {
         if (owner?.get() === activity) {
-            dialog?.dismiss(); dialog = null
+            try { dialog?.dismiss() } catch (_: Exception) {}
+            dialog = null
             dismissProgress()
             cancelDownload(activity.applicationContext)
             owner = null

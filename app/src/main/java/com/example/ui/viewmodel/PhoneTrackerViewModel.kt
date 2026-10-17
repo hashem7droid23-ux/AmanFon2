@@ -163,6 +163,7 @@ class PhoneTrackerViewModel(application: Application) : AndroidViewModel(applica
         var d = raw.filter { it.isDigit() }
         if (d.startsWith("00967")) d = d.removePrefix("00967") else if (d.startsWith("967") && d.length > 9) d = d.removePrefix("967")
         if (d.startsWith("0") && d.length == 10) d = d.removePrefix("0")
+        if (d.length > 9) d = d.takeLast(9)
         return d.ifBlank { raw.trim() }
     }
     fun clearSubmissionMessage() { _submissionSuccessMessage.value = null }

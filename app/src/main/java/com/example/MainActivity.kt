@@ -87,8 +87,8 @@ class MainActivity : ComponentActivity() {
         if (intent == null) return
         val targetScreen = intent.getStringExtra(NotificationHelper.EXTRA_TARGET_SCREEN)
         val reportId = intent.getLongExtra(NotificationHelper.EXTRA_REPORT_ID, -1L)
-        if (targetScreen == "details" && reportId != -1L) viewModel.openReportDetails(reportId)
-        else if (targetScreen == "alerts") viewModel.navigateTo(AppScreen.ALERTS)
+        if (targetScreen == "details" && reportId > 0L) viewModel.openReportDetails(reportId)
+        else if (targetScreen == "alerts" || targetScreen == "details") viewModel.navigateTo(AppScreen.ALERTS)
     }
 }
 

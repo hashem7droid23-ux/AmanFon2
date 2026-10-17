@@ -72,7 +72,7 @@ object InAppNotificationManager {
     init {
         // Initialize FCM Registration and subscribe to general alerts topic
         try {
-            FirebaseMessaging.getInstance().getToken().addOnCompleteListener { task ->
+            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     _fcmToken.value = task.result
                 }

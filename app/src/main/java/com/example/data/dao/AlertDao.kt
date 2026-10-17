@@ -18,4 +18,6 @@ interface AlertDao {
     @Query("UPDATE broadcast_alerts SET isRead = 1") suspend fun markAllAsRead()
     @Query("DELETE FROM broadcast_alerts WHERE id = :id") suspend fun deleteAlert(id: Long)
     @Query("DELETE FROM broadcast_alerts") suspend fun clearAll()
+    @Query("SELECT EXISTS(SELECT 1 FROM broadcast_alerts WHERE title = :title AND message = :message AND alertType = :alertType)")
+    suspend fun existsByContent(title: String, message: String, alertType: String): Boolean
 }

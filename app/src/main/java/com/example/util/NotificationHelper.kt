@@ -87,15 +87,20 @@ object NotificationHelper {
     ) {
         if (!hasNotificationPermission(context)) return
 
+        val notificationId = if (reportId > 0L) reportId.toInt() else 9999
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(EXTRA_TARGET_SCREEN, "details")
-            putExtra(EXTRA_REPORT_ID, reportId)
+            if (reportId > 0L) {
+                putExtra(EXTRA_TARGET_SCREEN, "details")
+                putExtra(EXTRA_REPORT_ID, reportId)
+            } else {
+                putExtra(EXTRA_TARGET_SCREEN, "alerts")
+            }
         }
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            reportId.toInt(),
+            notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -116,7 +121,7 @@ object NotificationHelper {
             .build()
 
         try {
-            NotificationManagerCompat.from(context).notify(reportId.toInt(), notification)
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
         } catch (_: SecurityException) {
             // Permission might be revoked at runtime
         }

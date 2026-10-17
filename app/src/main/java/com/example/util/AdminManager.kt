@@ -220,7 +220,7 @@ object AdminManager {
         if (isUrgent) {
             NotificationHelper.showUrgentTheftAlert(
                 context = context,
-                reportId = 9999L,
+                reportId = 0L,
                 title = formattedTitle,
                 message = formattedMessage,
                 governorate = "اليمن"

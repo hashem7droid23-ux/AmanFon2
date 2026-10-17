@@ -24,33 +24,70 @@ class PhoneTrackerRepository(private val reportDao: ReportDao, private val alert
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
     private var syncJob: Job? = null
+    private var alertsSyncJob: Job? = null
     private val auth = FirebaseAuth.getInstance()
     private val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         syncJob?.cancel(); syncJob = null
-        if (firebaseAuth.currentUser != null) syncJob = scope.launch {
-            while (isActive) {
-                try {
-                    firestoreService.observeReportSnapshots().collect { snapshot ->
-                        lock.withLock {
-                            AppDatabase.getDatabase(context).withTransaction {
-                                snapshot.reports.forEach { upsertCloud(it, snapshot.authoritative) }
-                                if (snapshot.authoritative) {
-                                    val remoteIds = snapshot.reports.map { it.id }.toSet()
-                                    reportDao.getCloudReports().filter { it.cloudId !in remoteIds }.forEach {
-                                        reportDao.deleteReport(it.id)
-                                        ReportPhotos.deleteLocal(context, it.imei1)
+        alertsSyncJob?.cancel(); alertsSyncJob = null
+        if (firebaseAuth.currentUser != null) {
+            syncJob = scope.launch {
+                while (isActive) {
+                    try {
+                        firestoreService.observeReportSnapshots().collect { snapshot ->
+                            lock.withLock {
+                                AppDatabase.getDatabase(context).withTransaction {
+                                    snapshot.reports.forEach { upsertCloud(it, snapshot.authoritative) }
+                                    if (snapshot.authoritative) {
+                                        val remoteIds = snapshot.reports.map { it.id }.toSet()
+                                        reportDao.getCloudReports().filter { it.cloudId !in remoteIds }.forEach {
+                                            reportDao.deleteReport(it.id)
+                                            ReportPhotos.deleteLocal(context, it.imei1)
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                } catch (e: CancellationException) { throw e }
-                catch (e: Exception) { android.util.Log.w("PhoneTrackerRepo", "Sync failed; retrying", e); delay(5000) }
+                    } catch (e: CancellationException) { throw e }
+                    catch (e: Exception) { android.util.Log.w("PhoneTrackerRepo", "Sync failed; retrying", e); delay(5000) }
+                }
+            }
+            alertsSyncJob = scope.launch {
+                while (isActive) {
+                    try {
+                        firestoreService.observeCloudAlerts().collect { cloudAlerts ->
+                            lock.withLock {
+                                AppDatabase.getDatabase(context).withTransaction {
+                                    cloudAlerts.forEach { ca ->
+                                        if (ca.title.isNotBlank() && !alertDao.existsByContent(ca.title, ca.message, ca.alertType)) {
+                                            val localReportId = if (ca.reportId.isNotBlank() && !ca.reportId.startsWith("supervisor_broadcast_")) {
+                                                reportDao.getByCloudId(ca.reportId)?.id ?: 0L
+                                            } else 0L
+                                            alertDao.insertAlert(
+                                                AlertEntity(
+                                                    reportId = localReportId,
+                                                    title = ca.title,
+                                                    message = ca.message,
+                                                    governorate = ca.governorate,
+                                                    deviceModel = ca.deviceModel,
+                                                    imeiSnippet = ca.imeiSnippet,
+                                                    timestamp = ca.timestamp?.toDate()?.time ?: System.currentTimeMillis(),
+                                                    isRead = false,
+                                                    alertType = ca.alertType
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: CancellationException) { throw e }
+                    catch (e: Exception) { android.util.Log.w("PhoneTrackerRepo", "Alerts sync failed; retrying", e); delay(5000) }
+                }
             }
         }
     }
     init { auth.addAuthStateListener(listener) }
-    fun close() { auth.removeAuthStateListener(listener); scope.cancel() }
+    fun close() { auth.removeAuthStateListener(listener); syncJob?.cancel(); alertsSyncJob?.cancel(); scope.cancel() }
     val allReports: Flow<List<ReportEntity>> = reportDao.getAllReports()
     val allAlerts: Flow<List<AlertEntity>> = alertDao.getAllAlerts()
     val unreadAlertsCount = alertDao.getUnreadAlertsCount()
