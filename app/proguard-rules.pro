@@ -23,12 +23,9 @@
 -keep @androidx.room.Entity class * { *; }
 -keep @androidx.room.Dao class * { *; }
 
-# 4. حماية نماذج ونطاقات Firebase و Google Identity
+# 4. حماية نماذج ونطاقات Firebase و Google Identity (بقية القواعد تأتي تلقائياً من AAR consumer rules)
 -keepattributes *Annotation*
--keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }
--keep class androidx.credentials.** { *; }
--keep class com.google.android.libraries.identity.googleid.** { *; }
+-keep class com.google.firebase.firestore.** { *; }
 
 # 5. حماية نماذج بيانات أمان فون من حذف الحقول أثناء التحسين (Firestore toObjects يعتمد على الانعكاس)
 -keep class com.example.data.model.** { *; }
@@ -37,15 +34,13 @@
 -keep class com.example.util.DeviceIntegrityChecker { *; }
 -keep class com.example.service.** { *; }
 
-# 6. Kotlin metadata (Moshi / reflection)
+# 6. Kotlin metadata (reflection)
 -keep class kotlin.Metadata { *; }
 -keepclassmembers class kotlin.Metadata { public <methods>; }
 
-# 7. حماية مكونات واجهات Jetpack Compose
--keep class androidx.compose.** { *; }
+# 7. تحذيرات مكتبات اختيارية غير موجودة على أندرويد (OkHttp / gRPC / Recaptcha)
 -dontwarn androidx.compose.**
-
-# 8. تحذيرات مكتبات اختيارية غير موجودة على أندرويد (OkHttp / Retrofit / Moshi / gRPC)
+-dontwarn com.google.android.gms.internal.recaptchabase.**
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
